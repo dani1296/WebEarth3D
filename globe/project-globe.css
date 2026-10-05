@@ -136,8 +136,9 @@
 }
 
 .project-globe--split .project-globe-title {
-  font-size: clamp(1.25rem, 4vw, 1.75rem);
+  font-size: clamp(1.125rem, 4vw, 1.75rem);
   letter-spacing: -0.015em;
+  text-wrap: balance; /* if it needs two lines, split it evenly instead of leaving one word alone */
 }
 
 .project-globe--split .project-globe-description {
