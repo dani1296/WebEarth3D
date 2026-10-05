@@ -34,7 +34,7 @@ window.GLOBE_SETTINGS = {
   title: "{projects} proyectos en {countries} países",
   description: "",
   projectsTotal: "+2,000",
-  countriesTotal: "+10",
+  countriesTotal: "+15",
 
   secondsPerTurn: 60,
   allowDragging: false,

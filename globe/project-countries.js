@@ -22,4 +22,11 @@ window.PROJECT_COUNTRIES = [
   "Chile",
   "Filipinas",
   "Panamá",
+  "Ghana",
+  "Ecuador", 
+  "Colombia", 
+  "Francia", 
+  "Bolivia", 
+  "Guatemala", 
+  "Marruecos"
 ];
