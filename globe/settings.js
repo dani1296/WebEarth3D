@@ -10,7 +10,7 @@
 //                             fills a whole full-width hero.
 //   size            Globe size as a fraction of the space it has (0.8 = 80%).
 //
-// Text (use "" to hide)
+// Text, in Spanish (use "" to hide)
 //   title           Main line. {projects} and {countries} are replaced by the totals below.
 //   description     Short text under it. The same placeholders work here.
 //   projectsTotal   What {projects} shows, written exactly as it should appear.
@@ -25,6 +25,12 @@
 //   showControls    true = show buttons to switch between those two modes, plus a
 //                   speed slider while it spins by itself.
 //   labels          Wording of the controls.
+//
+// Other languages (see "languages" at the bottom)
+//   The globe's address chooses the language: ...WebEarth3D/?lang=en shows the
+//   "en" texts. In Wix, each language version of the page uses its own address.
+//   A language can change any of the text settings above; anything it doesn't
+//   set uses the Spanish value.
 
 window.GLOBE_SETTINGS = {
   theme: "website",
@@ -40,4 +46,28 @@ window.GLOBE_SETTINGS = {
   allowDragging: false,
   showControls: true,
   labels: { rotate: "Automático", drag: "Arrastrar", speed: "Velocidad" },
+
+  languages: {
+    // Català: ...WebEarth3D/?lang=ca
+    ca: {
+      title: "{projects} projectes en {countries} països",
+      labels: { rotate: "Automàtic", drag: "Arrossegar", speed: "Velocitat" },
+    },
+
+    // English: ...WebEarth3D/?lang=en
+    en: {
+      title: "{projects} projects in {countries} countries",
+      labels: { rotate: "Auto-rotate", drag: "Drag", speed: "Speed" },
+    },
+
+    // 日本語: ...WebEarth3D/?lang=ja
+    // Japanese reads more naturally as "15 or more countries" (15か国以上) than
+    // with a "+", so it has its own totals. Update them too when the totals change.
+    ja: {
+      title: "{countries}か国以上で{projects}件以上のプロジェクト",
+      projectsTotal: "2,000",
+      countriesTotal: "15",
+      labels: { rotate: "自動回転", drag: "ドラッグ", speed: "速度" },
+    },
+  },
 };

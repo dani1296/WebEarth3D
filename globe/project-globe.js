@@ -15,6 +15,9 @@
 // Anything in settings.js can be overridden for one globe, e.g.
 //   ProjectGlobe.create(element, { theme: "blueprint" });
 //
+// Language: the page's address picks it, e.g. index.html?lang=en uses the
+// "en" texts from settings.js. Without ?lang= the main (Spanish) texts are used.
+//
 // The element you pass in must have a size (e.g. height: 100vh in CSS);
 // the globe fills it and follows it when it resizes.
 
@@ -61,6 +64,7 @@
     accentColor: null, // default: highlightColor
   };
 
+  var DEFAULT_LANGUAGE = "es"; // the language of the main texts in settings.js
   var BASE_ALTITUDE = 0.006; // keeps countries just above the sphere surface
   var GRID_STEP_DEG = 15;
   var MAX_DEGREES_PER_SECOND = 36; // fastest slider position: one turn every 10 s
@@ -69,8 +73,12 @@
     if (!window.Globe) throw new Error("ProjectGlobe: globe.gl.min.js is not loaded.");
     if (!window.WORLD_COUNTRIES) throw new Error("ProjectGlobe: world-countries.js is not loaded.");
 
-    var options = Object.assign({}, DEFAULT_OPTIONS, window.GLOBE_SETTINGS, userOptions);
-    options.labels = Object.assign({}, DEFAULT_OPTIONS.labels, options.labels);
+    userOptions = userOptions || {};
+    var settings = window.GLOBE_SETTINGS || {};
+    var language = pickLanguage(userOptions.language, settings.languages);
+    var translation = language === DEFAULT_LANGUAGE ? {} : settings.languages[language];
+    var options = Object.assign({}, DEFAULT_OPTIONS, settings, translation, userOptions);
+    options.labels = Object.assign({}, DEFAULT_OPTIONS.labels, settings.labels, translation.labels, userOptions.labels);
     var countries = findCountries(options.countries || window.PROJECT_COUNTRIES || []);
     var shapes = buildShapes(countries, options);
     var currentTheme = null;
@@ -78,6 +86,7 @@
     if (getComputedStyle(container).position === "static") container.style.position = "relative";
     var layoutClass = "project-globe--" + (options.layout === "split" ? "split" : "full");
     container.classList.add("project-globe", layoutClass);
+    container.setAttribute("lang", language); // so screen readers pronounce the text correctly
 
     // The globe lives in its own layer so we don't change the host element's layout.
     var layer = document.createElement("div");
@@ -201,6 +210,8 @@
       getTheme: function () { return currentTheme; },
       setDragMode: setDragMode,
       setSpeed: setSpeed,
+      // Language of the texts ("es", "en"...).
+      language: language,
       // Number of countries highlighted, and the ones from the list that were not recognised.
       countryCount: countries.matched.length,
       unknownCountries: countries.unknown,
@@ -215,6 +226,17 @@
         container.classList.remove("project-globe", layoutClass);
       },
     };
+  }
+
+  // The language to use: the one passed in, else ?lang= in the page address
+  // (e.g. "?lang=en", set per language in Wix), else Spanish. A language
+  // without texts in settings.js falls back to Spanish.
+  function pickLanguage(requested, languages) {
+    var code = requested || new URLSearchParams(window.location.search).get("lang") || DEFAULT_LANGUAGE;
+    code = String(code).toLowerCase().split("-")[0]; // "en-US" -> "en"
+    if (code === DEFAULT_LANGUAGE || (languages && languages[code])) return code;
+    console.warn('ProjectGlobe: no hay textos para el idioma "' + code + '" en settings.js; se usa español.');
+    return DEFAULT_LANGUAGE;
   }
 
   // Camera distance (in globe radii above the surface) at which the globe

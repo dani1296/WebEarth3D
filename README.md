@@ -40,6 +40,21 @@ Edit [globe/settings.js](globe/settings.js):
 | `showControls` | `true` = show the Automático / Arrastrar buttons and the speed slider |
 | `labels` | Wording of those controls |
 
+## Languages
+
+The Wix site has four languages: Español, Català, English and 日本語. The globe page picks its language from its address:
+
+| Wix language | Address of the globe box in Wix |
+|---|---|
+| Español | `https://dani1296.github.io/WebEarth3D/` |
+| Català | `https://dani1296.github.io/WebEarth3D/?lang=ca` |
+| English | `https://dani1296.github.io/WebEarth3D/?lang=en` |
+| 日本語 | `https://dani1296.github.io/WebEarth3D/?lang=ja` |
+
+In the Wix editor, switch the editor's language (top left), select the globe and set its address for that language. The texts for each language are in the `languages` part of [globe/settings.js](globe/settings.js). Anything a language doesn't set uses the Spanish value, and an address with an unknown language shows Spanish.
+
+## How the controls behave
+
 In **Automático** mode the globe spins by itself; visitors can change the speed with the slider. In **Arrastrar** mode it stops, and visitors spin it by dragging. It never zooms. In both modes, scrolling the page over the globe works normally, with a mouse wheel and with a finger on phones.
 
 ## Change the highlighted countries

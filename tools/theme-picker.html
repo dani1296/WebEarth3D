@@ -158,6 +158,7 @@
       var speedInUse = settings.secondsPerTurn;
 
       // Start from the address bar (e.g. ?theme=blueprint), else from settings.js.
+      // ?lang=en etc. also works here, to see the captions in other languages.
       var params = new URLSearchParams(location.search);
       var themeName = [params.get("theme"), themeInUse, themeNames[0]].filter(function (name) {
         return themeNames.indexOf(name) !== -1;
@@ -215,8 +216,10 @@
       }
 
       function saveToAddressBar() {
+        var params = new URLSearchParams(location.search); // keeps ?lang= if present
+        params.set("theme", themeName);
         try {
-          history.replaceState(null, "", "?theme=" + encodeURIComponent(themeName));
+          history.replaceState(null, "", "?" + params.toString());
         } catch (error) {
           // Some browsers block this for pages opened straight from disk; it's only a convenience.
         }
