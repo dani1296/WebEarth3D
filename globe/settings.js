@@ -42,7 +42,7 @@ window.GLOBE_SETTINGS = {
   projectsTotal: "+2,000",
   countriesTotal: "+15",
 
-  secondsPerTurn: 60,
+  secondsPerTurn: 10,
   allowDragging: false,
   showControls: true,
   labels: { rotate: "Automático", drag: "Arrastrar", speed: "Velocidad" },

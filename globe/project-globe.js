@@ -33,7 +33,7 @@
     description: "",        // text under the heading; the same placeholders work here
     projectsTotal: "",      // text for {projects}, e.g. "+2,000"
     countriesTotal: "auto", // text for {countries}; "auto" = number of highlighted countries
-    secondsPerTurn: 60,     // time for one full rotation; 0 = still
+    secondsPerTurn: 10,     // time for one full rotation; 0 = still
     allowDragging: false,   // true = start in drag mode (spin by hand, no auto-rotation)
     showControls: false,    // true = show the mode buttons and speed slider
     labels: { rotate: "Automático", drag: "Arrastrar", speed: "Velocidad" },
@@ -67,7 +67,7 @@
   var DEFAULT_LANGUAGE = "es"; // the language of the main texts in settings.js
   var BASE_ALTITUDE = 0.006; // keeps countries just above the sphere surface
   var GRID_STEP_DEG = 15;
-  var MAX_DEGREES_PER_SECOND = 36; // fastest slider position: one turn every 10 s
+  var MAX_DEGREES_PER_SECOND = 216; // fastest slider position: one turn every ~1.7 s
 
   function create(container, userOptions) {
     if (!window.Globe) throw new Error("ProjectGlobe: globe.gl.min.js is not loaded.");
