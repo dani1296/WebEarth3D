@@ -9,6 +9,7 @@
 
 A rotating 3D globe for a structural engineering office's home page, highlighting countries where they have built projects. The target site is built with Wix (https://paolabozzo1993.wixsite.com/luisbozzo/, white Apple-like design, Inter font, `#1d1d1f` text, `#0071e3` blue). The user can't edit the Wix site yet.
 
+- Status (2026-10-05): waiting for the site manager to invite the user to Wix as a collaborator with editing rights. Hosting decided: GitHub Pages, which requires the user to make the repo (`dani1296/WebEarth3D`, currently private) public. The user signs in to Wix and GitHub themselves; never enter credentials. Test on a hidden Wix page first; publish only with explicit confirmation.
 - Integration plan: a split hero. Wix keeps its own headline/buttons on the left; `index.html` (globe only) is hosted as a static site and shown in a Wix "Embed a site" iframe on the right. Settings: `layout: "split"`, theme `"website"`.
 - `tools/wix-preview.html` mocks the Wix home page with that iframe; use it to review layout changes. Scrolling over the iframe (wheel and touch, both modes) must keep scrolling the parent page.
 - Vanilla HTML/CSS/JS only: no frameworks, no bundler, no npm dependencies at runtime.
