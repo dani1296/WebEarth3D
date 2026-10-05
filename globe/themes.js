@@ -26,6 +26,8 @@
 //   gridColor             Latitude/longitude lines. null = no lines.
 //   markerColor           Pulsing markers on small countries. Defaults to highlightColor.
 //   pulseAll              true = pulsing markers on every highlighted country.
+//   textColor             Colour of the title and controls. Default "#e8eef6" (near white).
+//                         The country count and active button use highlightColor.
 
 window.GLOBE_THEMES = {
   midnight: {

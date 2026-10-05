@@ -6,9 +6,10 @@
   <title>Theme Picker</title>
 
   <!--
-    Internal tool for comparing globe themes. Not part of the website.
-    The website uses the theme set in globe/settings.js.
+    Internal tool for comparing globe themes and speeds. Not part of the website.
+    The website uses what is set in globe/settings.js.
   -->
+  <link rel="stylesheet" href="../globe/project-globe.css">
   <script defer src="../globe/lib/globe.gl.min.js"></script>
   <script defer src="../globe/lib/world-countries.js"></script>
   <script defer src="../globe/project-countries.js"></script>
@@ -41,36 +42,10 @@
       height: 100svh;
     }
 
-    .sample-text {
-      position: absolute;
-      left: clamp(16px, 5vw, 64px);
-      bottom: clamp(140px, 18vh, 200px);
-      max-width: 28rem;
-      pointer-events: none;
-      z-index: 1;
-    }
-
-    .sample-text .eyebrow {
-      margin: 0 0 0.5rem;
-      font-size: 0.75rem;
-      letter-spacing: 0.14em;
-      text-transform: uppercase;
-      color: var(--muted);
-    }
-
-    .sample-text h1 {
-      margin: 0;
-      font-size: clamp(1.75rem, 4vw, 3rem);
-      font-weight: 600;
-      line-height: 1.1;
-    }
-
-    .sample-text h1 span { color: var(--accent); }
-
     .panel {
       position: fixed;
       left: 50%;
-      bottom: 16px;
+      top: 16px;
       transform: translateX(-50%);
       width: max-content;
       max-width: calc(100vw - 32px);
@@ -83,6 +58,15 @@
       z-index: 2;
     }
 
+    .panel .title {
+      margin: 0 0 8px;
+      font-size: 0.7rem;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--muted);
+      text-align: center;
+    }
+
     .panel .row {
       display: flex;
       flex-wrap: wrap;
@@ -92,8 +76,9 @@
     }
 
     .panel .status {
-      margin: 0 0 8px;
+      margin: 8px 0 0;
       font-size: 0.8rem;
+      line-height: 1.5;
       color: var(--muted);
       text-align: center;
     }
@@ -132,75 +117,43 @@
       background: currentColor;
       vertical-align: middle;
     }
-
-    .panel .divider {
-      width: 1px;
-      align-self: stretch;
-      background: var(--panel-border);
-      margin: 0 4px;
-    }
-
-    .panel label {
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      font-size: 0.85rem;
-      color: var(--muted);
-      cursor: pointer;
-    }
-
-    @media (max-width: 640px) {
-      .sample-text { bottom: 230px; }
-      .panel .divider { display: none; }
-    }
   </style>
 </head>
 <body>
-  <section class="hero" id="hero-globe">
-    <div class="sample-text">
-      <p class="eyebrow">Sample text, to judge contrast</p>
-      <h1>Projects built in <span id="country-count">0</span> countries</h1>
-    </div>
-  </section>
+  <section class="hero" id="hero-globe"></section>
 
   <div class="panel">
-    <p class="status" id="status"></p>
-    <div class="row">
-      <span id="theme-buttons" style="display:contents"></span>
-      <span class="divider"></span>
-      <label><input type="checkbox" id="drag-toggle"> Allow dragging</label>
-    </div>
+    <p class="title">Theme picker &middot; internal tool</p>
+    <div class="row" id="theme-buttons"></div>
+    <p class="status">
+      <span id="theme-status"></span><br>
+      <span id="speed-status"></span>
+    </p>
   </div>
 
   <script>
     document.addEventListener("DOMContentLoaded", function () {
       var container = document.getElementById("hero-globe");
       var buttonsEl = document.getElementById("theme-buttons");
-      var statusEl = document.getElementById("status");
-      var dragToggle = document.getElementById("drag-toggle");
+      var themeStatusEl = document.getElementById("theme-status");
+      var speedStatusEl = document.getElementById("speed-status");
       var settings = window.GLOBE_SETTINGS || {};
       var themeNames = Object.keys(window.GLOBE_THEMES);
       var themeInUse = settings.theme;
+      var speedInUse = settings.secondsPerTurn;
 
-      // Start from the address bar (e.g. ?theme=blueprint&drag=1), else from settings.js.
+      // Start from the address bar (e.g. ?theme=blueprint), else from settings.js.
       var params = new URLSearchParams(location.search);
       var themeName = [params.get("theme"), themeInUse, themeNames[0]].filter(function (name) {
         return themeNames.indexOf(name) !== -1;
       })[0];
-      dragToggle.checked = params.has("drag") ? params.get("drag") === "1" : Boolean(settings.allowDragging);
 
-      var globe = null;
-
-      function buildGlobe() {
-        if (globe) globe.destroy();
-        globe = ProjectGlobe.create(container, {
-          theme: themeName,
-          allowDragging: dragToggle.checked,
-        });
-        window.previewGlobe = globe; // handy for experimenting in the browser console
-        var shown = window.PROJECT_COUNTRIES.length - globe.unknownCountries.length;
-        document.getElementById("country-count").textContent = shown;
-      }
+      var globe = ProjectGlobe.create(container, {
+        theme: themeName,
+        showControls: true, // always available here, even if hidden on the website
+        onSpeedChange: updateSpeedStatus,
+      });
+      window.previewGlobe = globe; // handy for experimenting in the browser console
 
       function selectTheme(name) {
         themeName = name;
@@ -211,19 +164,33 @@
         Array.prototype.forEach.call(buttonsEl.children, function (button) {
           button.setAttribute("aria-pressed", String(button.dataset.theme === name));
         });
-        updateStatus();
+        updateThemeStatus();
         saveToAddressBar();
       }
 
-      function updateStatus() {
+      function updateThemeStatus() {
         var inUseLabel = labelOf(themeInUse);
         if (themeName === themeInUse) {
-          statusEl.innerHTML = "<strong>" + inUseLabel + "</strong> is the theme the website uses (●).";
+          themeStatusEl.innerHTML = "<strong>" + inUseLabel + "</strong> is the theme the website uses (●).";
         } else {
-          statusEl.innerHTML =
-            "The website uses <strong>" + inUseLabel + "</strong> (●). To switch to this one, set " +
+          themeStatusEl.innerHTML =
+            "The website uses <strong>" + inUseLabel + "</strong> (●). To switch, set " +
             '<code>theme: "' + themeName + '"</code> in globe/settings.js';
         }
+      }
+
+      function updateSpeedStatus(secondsPerTurn) {
+        if (secondsPerTurn === undefined || secondsPerTurn === speedInUse) {
+          speedStatusEl.innerHTML = "Speed: " + describeSpeed(speedInUse) + " (as in settings.js).";
+        } else {
+          speedStatusEl.innerHTML =
+            "Speed: " + describeSpeed(secondsPerTurn) + ". To make it the default, set " +
+            "<code>secondsPerTurn: " + secondsPerTurn + "</code> in globe/settings.js";
+        }
+      }
+
+      function describeSpeed(secondsPerTurn) {
+        return secondsPerTurn > 0 ? "one turn every " + secondsPerTurn + " s" : "not rotating";
       }
 
       function labelOf(name) {
@@ -232,9 +199,8 @@
       }
 
       function saveToAddressBar() {
-        var query = "?theme=" + encodeURIComponent(themeName) + (dragToggle.checked ? "&drag=1" : "&drag=0");
         try {
-          history.replaceState(null, "", query);
+          history.replaceState(null, "", "?theme=" + encodeURIComponent(themeName));
         } catch (error) {
           // Some browsers block this for pages opened straight from disk; it's only a convenience.
         }
@@ -256,26 +222,22 @@
         button.textContent = labelOf(name);
         if (name === themeInUse) {
           button.classList.add("in-use");
-          button.title = "The website uses this theme";
+          button.setAttribute("aria-description", "The website uses this theme");
         }
         button.addEventListener("click", function () { selectTheme(name); });
         buttonsEl.appendChild(button);
       });
 
-      dragToggle.addEventListener("change", function () {
-        buildGlobe();
-        saveToAddressBar();
-      });
-
       // Left/right arrow keys cycle through themes.
       document.addEventListener("keydown", function (event) {
         if (event.key !== "ArrowLeft" && event.key !== "ArrowRight") return;
+        if (event.target.tagName === "INPUT") return; // let the arrows move the speed slider
         var step = event.key === "ArrowRight" ? 1 : -1;
         var index = (themeNames.indexOf(themeName) + step + themeNames.length) % themeNames.length;
         selectTheme(themeNames[index]);
       });
 
-      buildGlobe();
+      updateSpeedStatus();
       selectTheme(themeName);
     });
   </script>

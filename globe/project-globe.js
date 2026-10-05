@@ -1,12 +1,13 @@
 // Project globe: a rotating 3D globe that highlights the countries where we
 // have built projects. Plain JavaScript, no build step, works in any website.
 //
-// Load these scripts first, in this order (see index.html):
+// Load these first (see index.html):
+//   project-globe.css        styles for the title and controls
 //   lib/globe.gl.min.js      3D globe library (globe.gl, MIT licence)
 //   lib/world-countries.js   country borders (Natural Earth)
 //   project-countries.js     the highlighted countries
 //   themes.js                the available themes
-//   settings.js              which theme to use, speed, etc.
+//   settings.js              which theme to use, text, speed, etc.
 //
 // Then:
 //   ProjectGlobe.create(document.getElementById("hero-globe"));
@@ -24,11 +25,16 @@
   var DEFAULT_OPTIONS = {
     theme: "midnight",      // theme key from themes.js, or a theme object
     countries: null,        // list of countries; defaults to PROJECT_COUNTRIES
-    secondsPerTurn: 60,     // time for one full rotation
-    allowDragging: false,   // true = visitors can drag to spin the globe (never zoom)
+    title: "",              // heading over the globe; {count} = number of countries
+    description: "",        // text under the heading; {count} works here too
+    secondsPerTurn: 60,     // time for one full rotation; 0 = still
+    allowDragging: false,   // true = start in drag mode (spin by hand, no auto-rotation)
+    showControls: false,    // true = show the mode buttons and speed slider
+    labels: { rotate: "Auto-rotate", drag: "Drag", speed: "Speed" },
     size: 0.8,              // globe diameter as a fraction of the container's shorter side
     view: { lat: 22, lng: 0 }, // starting point: lat = tilt towards north, lng = start longitude
     smallCountryKm2: 20000, // highlighted countries smaller than this get a marker
+    onSpeedChange: null,    // function (secondsPerTurn) called when the slider moves
   };
 
   var THEME_DEFAULTS = {
@@ -46,26 +52,33 @@
     gridColor: null,
     markerColor: null,
     pulseAll: false,
+    textColor: "#e8eef6",
   };
 
   var BASE_ALTITUDE = 0.006; // keeps countries just above the sphere surface
   var GRID_STEP_DEG = 15;
+  var MAX_DEGREES_PER_SECOND = 36; // fastest slider position: one turn every 10 s
 
   function create(container, userOptions) {
     if (!window.Globe) throw new Error("ProjectGlobe: globe.gl.min.js is not loaded.");
     if (!window.WORLD_COUNTRIES) throw new Error("ProjectGlobe: world-countries.js is not loaded.");
 
     var options = Object.assign({}, DEFAULT_OPTIONS, window.GLOBE_SETTINGS, userOptions);
+    options.labels = Object.assign({}, DEFAULT_OPTIONS.labels, options.labels);
     var countries = findCountries(options.countries || window.PROJECT_COUNTRIES || []);
     var shapes = buildShapes(countries.highlightedIds);
     var currentTheme = null;
 
+    if (getComputedStyle(container).position === "static") container.style.position = "relative";
+    container.classList.add("project-globe");
+
     // The globe lives in its own layer so we don't change the host element's layout.
     var layer = document.createElement("div");
     layer.style.cssText = "position:absolute;inset:0;overflow:hidden;";
-    if (!options.allowDragging) layer.style.pointerEvents = "none"; // let clicks and scrolling pass through
-    if (getComputedStyle(container).position === "static") container.style.position = "relative";
     container.appendChild(layer);
+
+    var overlay = buildOverlay(options, countries.matched.length);
+    container.appendChild(overlay.element);
 
     var globe = new window.Globe(layer, { animateIn: true })
       .width(container.clientWidth)
@@ -93,16 +106,56 @@
     fitToContainer();
 
     var controls = globe.controls();
-    var reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    controls.autoRotate = !reduceMotion;
-    controls.autoRotateSpeed = 60 / options.secondsPerTurn;
     controls.enableZoom = false;
     controls.enablePan = false;
-    controls.enableRotate = options.allowDragging;
-    if (options.allowDragging) {
-      // Horizontal drags spin the globe; vertical swipes still scroll the page on phones.
-      controls.domElement.style.touchAction = "pan-y";
+
+    // --- Movement: auto-rotate mode (spins by itself) or drag mode (spin by hand).
+
+    var reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    var degreesPerSecond = reduceMotion ? 0 : speedFromSeconds(options.secondsPerTurn);
+    var dragMode = false;
+
+    function updateMovement() {
+      controls.autoRotate = !dragMode && degreesPerSecond > 0;
+      controls.autoRotateSpeed = degreesPerSecond / 6; // three.js unit: 1 = one turn per 60 s
     }
+
+    function setDragMode(on) {
+      dragMode = Boolean(on);
+      controls.enableRotate = dragMode;
+      // Outside drag mode, clicks and scrolling pass straight through the globe.
+      layer.style.pointerEvents = dragMode ? "auto" : "none";
+      layer.style.cursor = dragMode ? "grab" : "";
+      // In drag mode, horizontal drags spin the globe; vertical swipes still scroll the page on phones.
+      controls.domElement.style.touchAction = dragMode ? "pan-y" : "";
+      updateMovement();
+      if (overlay.rotateButton) {
+        overlay.rotateButton.setAttribute("aria-pressed", String(!dragMode));
+        overlay.dragButton.setAttribute("aria-pressed", String(dragMode));
+        overlay.speed.hidden = dragMode;
+      }
+    }
+
+    function setSpeed(secondsPerTurn) {
+      degreesPerSecond = speedFromSeconds(secondsPerTurn);
+      if (overlay.slider) overlay.slider.value = sliderFromSpeed(degreesPerSecond);
+      updateMovement();
+    }
+
+    if (overlay.slider) {
+      overlay.slider.value = sliderFromSpeed(degreesPerSecond);
+      overlay.slider.addEventListener("input", function () {
+        degreesPerSecond = speedFromSlider(Number(overlay.slider.value));
+        updateMovement();
+        if (options.onSpeedChange) options.onSpeedChange(secondsFromSpeed(degreesPerSecond));
+      });
+      overlay.rotateButton.addEventListener("click", function () { setDragMode(false); });
+      overlay.dragButton.addEventListener("click", function () { setDragMode(true); });
+    }
+
+    setDragMode(options.allowDragging);
+
+    // --- Housekeeping
 
     // Follow the container's size.
     var resizeObserver = new ResizeObserver(fitToContainer);
@@ -119,6 +172,9 @@
       currentTheme = resolveTheme(themeOrName);
       applyTheme(globe, currentTheme, shapes, countries, options);
       container.style.backgroundColor = currentTheme.background;
+      // Colours for the title and controls (used in project-globe.css).
+      container.style.setProperty("--project-globe-text", currentTheme.textColor);
+      container.style.setProperty("--project-globe-accent", toRgbString(currentTheme.highlightColor));
     }
 
     setTheme(options.theme);
@@ -126,7 +182,10 @@
     return {
       setTheme: setTheme,
       getTheme: function () { return currentTheme; },
-      // Countries from the list that were not recognised.
+      setDragMode: setDragMode,
+      setSpeed: setSpeed,
+      // Number of countries highlighted, and the ones from the list that were not recognised.
+      countryCount: countries.matched.length,
       unknownCountries: countries.unknown,
       // The underlying globe.gl instance, for advanced tweaks.
       globe: globe,
@@ -135,6 +194,8 @@
         visibilityObserver.disconnect();
         globe._destructor();
         layer.remove();
+        overlay.element.remove();
+        container.classList.remove("project-globe");
       },
     };
   }
@@ -148,13 +209,101 @@
   }
 
   // ---------------------------------------------------------------------------
+  // Speed. The slider is quadratic so the slow end, where most choices are, is finer.
+
+  function speedFromSeconds(secondsPerTurn) {
+    return secondsPerTurn > 0 ? 360 / secondsPerTurn : 0;
+  }
+
+  function secondsFromSpeed(degreesPerSecond) {
+    return degreesPerSecond > 0 ? Math.round(360 / degreesPerSecond) : 0;
+  }
+
+  function speedFromSlider(value) {
+    var t = value / 100;
+    return MAX_DEGREES_PER_SECOND * t * t;
+  }
+
+  function sliderFromSpeed(degreesPerSecond) {
+    var t = Math.sqrt(Math.min(degreesPerSecond, MAX_DEGREES_PER_SECOND) / MAX_DEGREES_PER_SECOND);
+    return Math.round(t * 100);
+  }
+
+  // ---------------------------------------------------------------------------
+  // Title, description and controls over the globe
+
+  function buildOverlay(options, count) {
+    var ui = { element: element("div", "project-globe-overlay") };
+
+    if (options.title || options.description) {
+      var text = element("div", "project-globe-text");
+      if (options.title) {
+        var title = element("h1", "project-globe-title");
+        options.title.split("{count}").forEach(function (part, index) {
+          if (index > 0) {
+            var number = element("span", "project-globe-count");
+            number.textContent = count;
+            title.appendChild(number);
+          }
+          title.appendChild(document.createTextNode(part));
+        });
+        text.appendChild(title);
+      }
+      if (options.description) {
+        var description = element("p", "project-globe-description");
+        description.textContent = options.description.split("{count}").join(String(count));
+        text.appendChild(description);
+      }
+      ui.element.appendChild(text);
+    }
+
+    if (options.showControls) {
+      var bar = element("div", "project-globe-controls");
+
+      var modes = element("div", "project-globe-mode");
+      modes.setAttribute("role", "group");
+      ui.rotateButton = element("button");
+      ui.rotateButton.type = "button";
+      ui.rotateButton.textContent = options.labels.rotate;
+      ui.dragButton = element("button");
+      ui.dragButton.type = "button";
+      ui.dragButton.textContent = options.labels.drag;
+      modes.appendChild(ui.rotateButton);
+      modes.appendChild(ui.dragButton);
+
+      ui.speed = element("label", "project-globe-speed");
+      var speedText = element("span");
+      speedText.textContent = options.labels.speed;
+      ui.slider = element("input");
+      ui.slider.type = "range";
+      ui.slider.min = "0";
+      ui.slider.max = "100";
+      ui.slider.setAttribute("aria-label", options.labels.speed); // the visible word is hidden on small phones
+      ui.speed.appendChild(speedText);
+      ui.speed.appendChild(ui.slider);
+
+      bar.appendChild(modes);
+      bar.appendChild(ui.speed);
+      ui.element.appendChild(bar);
+    }
+
+    return ui;
+  }
+
+  function element(tag, className) {
+    var node = document.createElement(tag);
+    if (className) node.className = className;
+    return node;
+  }
+
+  // ---------------------------------------------------------------------------
   // Countries
 
   // Accent-, case- and punctuation-insensitive key: "España" -> "espana".
   function normalize(text) {
     return String(text)
       .normalize("NFD")
-      .replace(/[̀-ͯ]/g, "")
+      .replace(/\p{M}/gu, "") // remove accents
       .toLowerCase()
       .replace(/[^a-z0-9]/g, "");
   }

@@ -1,0 +1,135 @@
+/*
+  Styles for the title, description and controls shown over the project globe.
+
+  Colours follow the active theme: project-globe.js sets --project-globe-text
+  and --project-globe-accent on the globe's element. The font comes from the
+  page, so the text matches the rest of the website.
+*/
+
+.project-globe-overlay {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 1;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 20px 32px;
+  padding: 0 clamp(16px, 5vw, 64px) clamp(20px, 6vh, 56px);
+  color: var(--project-globe-text, #e8eef6);
+  pointer-events: none; /* clicks pass through to the globe, except on the controls */
+}
+
+/* Title and description */
+
+.project-globe-text {
+  max-width: 34rem;
+  text-shadow: 0 1px 16px rgba(0, 0, 0, 0.55);
+}
+
+.project-globe-title {
+  margin: 0;
+  font-size: clamp(1.75rem, 4vw, 3.25rem);
+  font-weight: 600;
+  line-height: 1.1;
+  letter-spacing: -0.01em;
+}
+
+.project-globe-count {
+  color: var(--project-globe-accent, #22d3ee);
+}
+
+.project-globe-description {
+  margin: 0.75rem 0 0;
+  max-width: 30rem;
+  font-size: clamp(0.95rem, 1.3vw, 1.125rem);
+  line-height: 1.5;
+  opacity: 0.75;
+}
+
+/* Controls: mode buttons and speed slider */
+
+.project-globe-controls {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  max-width: 100%;
+  padding: 4px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.35);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  pointer-events: auto;
+}
+
+.project-globe-mode {
+  display: flex;
+  gap: 2px;
+}
+
+.project-globe-mode button {
+  font: inherit;
+  font-size: 0.85rem;
+  color: inherit;
+  background: transparent;
+  border: 0;
+  border-radius: 999px;
+  padding: 6px 14px;
+  white-space: nowrap;
+  cursor: pointer;
+  opacity: 0.7;
+}
+
+.project-globe-mode button:hover {
+  opacity: 1;
+}
+
+.project-globe-mode button[aria-pressed="true"] {
+  opacity: 1;
+  color: var(--project-globe-accent, #22d3ee);
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.project-globe-speed {
+  display: flex;
+  flex: 1 1 auto;
+  min-width: 0;
+  align-items: center;
+  gap: 8px;
+  padding-right: 12px;
+  font-size: 0.8rem;
+  opacity: 0.8;
+}
+
+.project-globe-speed[hidden] {
+  display: none;
+}
+
+.project-globe-speed input {
+  flex: 1 1 110px;
+  width: 110px;
+  min-width: 56px;
+  margin: 0;
+  accent-color: var(--project-globe-accent, #22d3ee);
+  cursor: pointer;
+}
+
+/* Small phones: tighter buttons, and the slider without its "Speed" word. */
+@media (max-width: 380px) {
+  .project-globe-mode button {
+    padding: 6px 10px;
+  }
+
+  .project-globe-speed span {
+    display: none;
+  }
+}
+
+.project-globe-mode button:focus-visible,
+.project-globe-speed input:focus-visible {
+  outline: 2px solid var(--project-globe-accent, #22d3ee);
+  outline-offset: 2px;
+}

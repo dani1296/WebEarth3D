@@ -10,6 +10,7 @@
 A rotating 3D globe for a structural engineering office's front page, highlighting countries where they have built projects. It is meant to be dropped into a website whose stack is not decided yet.
 
 - Vanilla HTML/CSS/JS only: no frameworks, no bundler, no npm dependencies at runtime.
+- The website needs `globe/project-globe.css` plus the six scripts listed in `index.html`; keep the README embed snippet in sync when that list changes.
 - Classic `<script>` files that expose globals (`ProjectGlobe`, `PROJECT_COUNTRIES`, `GLOBE_THEMES`, `GLOBE_SETTINGS`, `WORLD_COUNTRIES`), not ES modules, so embedding stays a matter of copying `globe/` and adding script tags.
 - `globe/` is what ships to the website; `tools/` is internal only. `index.html` is the website view (globe only, configured by `globe/settings.js`). Theme comparison UI belongs in `tools/theme-picker.html`, never in `globe/` or `index.html`.
 - The user is not very familiar with web development: keep user-editable files (`globe/project-countries.js`, `globe/themes.js`) simple and well commented, and explain changes in plain terms.

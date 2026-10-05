@@ -7,10 +7,12 @@
 
   <!--
     Example of the globe as it will appear on the website.
-    To add it to the real site: copy the globe/ folder, then copy these
-    six scripts, the #hero-globe element and the small script at the bottom.
-    The look (theme, speed, dragging, size) is set in globe/settings.js.
+    To add it to the real site: copy the globe/ folder, then copy the
+    stylesheet and six scripts below, the #hero-globe element and the small
+    script at the bottom.
+    Theme, text, speed and controls are set in globe/settings.js.
   -->
+  <link rel="stylesheet" href="globe/project-globe.css">
   <script defer src="globe/lib/globe.gl.min.js"></script>
   <script defer src="globe/lib/world-countries.js"></script>
   <script defer src="globe/project-countries.js"></script>
@@ -22,6 +24,7 @@
     html, body {
       margin: 0;
       background: #02050b;
+      font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
     }
 
     #hero-globe {
