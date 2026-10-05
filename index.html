@@ -3,230 +3,39 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Project Globe - Preview</title>
+  <title>Project Globe</title>
 
-  <!-- The globe and its data. These five scripts are all a website needs. -->
+  <!--
+    Example of the globe as it will appear on the website.
+    To add it to the real site: copy the globe/ folder, then copy these
+    six scripts, the #hero-globe element and the small script at the bottom.
+    The look (theme, speed, dragging, size) is set in globe/settings.js.
+  -->
   <script defer src="globe/lib/globe.gl.min.js"></script>
   <script defer src="globe/lib/world-countries.js"></script>
   <script defer src="globe/project-countries.js"></script>
   <script defer src="globe/themes.js"></script>
+  <script defer src="globe/settings.js"></script>
   <script defer src="globe/project-globe.js"></script>
 
   <style>
-    /* Everything below is only for this preview page. */
-    :root {
-      --page-bg: #02050b;
-      --text: #e6edf5;
-      --muted: rgba(230, 237, 245, 0.6);
-      --panel: rgba(10, 14, 22, 0.72);
-      --panel-border: rgba(255, 255, 255, 0.1);
-      --accent: #22d3ee;
-    }
-
-    * { box-sizing: border-box; }
-
     html, body {
       margin: 0;
-      background: var(--page-bg);
-      color: var(--text);
-      font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
-      transition: background-color 0.4s;
+      background: #02050b;
     }
 
-    .hero {
+    #hero-globe {
       height: 100vh;
       height: 100svh;
-    }
-
-    .hero-text {
-      position: absolute;
-      left: clamp(16px, 5vw, 64px);
-      bottom: clamp(96px, 14vh, 160px);
-      max-width: 28rem;
-      pointer-events: none;
-      z-index: 1;
-    }
-
-    .hero-text .eyebrow {
-      margin: 0 0 0.5rem;
-      font-size: 0.75rem;
-      letter-spacing: 0.14em;
-      text-transform: uppercase;
-      color: var(--muted);
-    }
-
-    .hero-text h1 {
-      margin: 0;
-      font-size: clamp(1.75rem, 4vw, 3rem);
-      font-weight: 600;
-      line-height: 1.1;
-    }
-
-    .hero-text h1 span { color: var(--accent); }
-
-    .controls {
-      position: fixed;
-      left: 50%;
-      bottom: 16px;
-      transform: translateX(-50%);
-      width: max-content;
-      max-width: calc(100vw - 32px);
-      display: flex;
-      flex-wrap: wrap;
-      align-items: center;
-      justify-content: center;
-      gap: 8px;
-      padding: 10px 12px;
-      background: var(--panel);
-      border: 1px solid var(--panel-border);
-      border-radius: 14px;
-      backdrop-filter: blur(10px);
-      -webkit-backdrop-filter: blur(10px);
-      z-index: 2;
-    }
-
-    .controls .label {
-      font-size: 0.75rem;
-      color: var(--muted);
-      margin-right: 4px;
-    }
-
-    .controls button {
-      font: inherit;
-      font-size: 0.85rem;
-      color: var(--text);
-      background: transparent;
-      border: 1px solid var(--panel-border);
-      border-radius: 999px;
-      padding: 6px 12px;
-      cursor: pointer;
-    }
-
-    .controls button:hover { border-color: rgba(255, 255, 255, 0.3); }
-
-    .controls button[aria-pressed="true"] {
-      border-color: var(--accent);
-      color: var(--accent);
-    }
-
-    .controls .divider {
-      width: 1px;
-      align-self: stretch;
-      background: var(--panel-border);
-      margin: 0 4px;
-    }
-
-    @media (max-width: 640px) {
-      .hero-text { bottom: 170px; }
-      .controls .divider { display: none; }
-    }
-
-    .controls label {
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      font-size: 0.85rem;
-      color: var(--muted);
-      cursor: pointer;
     }
   </style>
 </head>
 <body>
-  <!-- On the real website, this element is where the globe goes. -->
-  <section class="hero" id="hero-globe">
-    <div class="hero-text">
-      <p class="eyebrow">Placeholder headline</p>
-      <h1>Projects built in <span id="country-count">0</span> countries</h1>
-    </div>
-  </section>
-
-  <!-- Preview-only controls for comparing themes. -->
-  <div class="controls" id="controls">
-    <span class="label">Theme</span>
-    <span id="theme-buttons" style="display:contents"></span>
-    <span class="divider"></span>
-    <label><input type="checkbox" id="drag-toggle"> Allow dragging</label>
-  </div>
+  <section id="hero-globe"></section>
 
   <script>
     document.addEventListener("DOMContentLoaded", function () {
-      var container = document.getElementById("hero-globe");
-      var buttonsEl = document.getElementById("theme-buttons");
-      var dragToggle = document.getElementById("drag-toggle");
-      var themeNames = Object.keys(window.GLOBE_THEMES);
-
-      // Settings can come from the address bar, e.g. index.html?theme=blueprint&drag=1
-      var params = new URLSearchParams(location.search);
-      var themeName = themeNames.indexOf(params.get("theme")) !== -1 ? params.get("theme") : themeNames[0];
-      dragToggle.checked = params.get("drag") === "1";
-
-      var globe = null;
-
-      function buildGlobe() {
-        if (globe) globe.destroy();
-        globe = ProjectGlobe.create(container, {
-          theme: themeName,
-          interactive: dragToggle.checked,
-        });
-        window.previewGlobe = globe; // handy for experimenting in the browser console
-        var shown = window.PROJECT_COUNTRIES.length - globe.unknownCountries.length;
-        document.getElementById("country-count").textContent = shown;
-      }
-
-      function selectTheme(name) {
-        themeName = name;
-        globe.setTheme(name);
-        var theme = globe.getTheme();
-        document.documentElement.style.setProperty("--page-bg", theme.background);
-        document.documentElement.style.setProperty("--accent", solidColor(theme.highlightColor));
-        Array.prototype.forEach.call(buttonsEl.children, function (button) {
-          button.setAttribute("aria-pressed", String(button.dataset.theme === name));
-        });
-        saveToAddressBar();
-      }
-
-      function saveToAddressBar() {
-        var query = "?theme=" + encodeURIComponent(themeName) + (dragToggle.checked ? "&drag=1" : "");
-        try {
-          history.replaceState(null, "", query);
-        } catch (error) {
-          // Some browsers block this for pages opened straight from disk; it's only a convenience.
-        }
-      }
-
-      // Highlight colours may be semi-transparent; text needs them fully opaque.
-      function solidColor(color) {
-        var ctx = document.createElement("canvas").getContext("2d");
-        ctx.fillStyle = color;
-        var value = ctx.fillStyle;
-        if (value.charAt(0) === "#") return value;
-        return "rgb(" + value.match(/[\d.]+/g).slice(0, 3).join(",") + ")";
-      }
-
-      themeNames.forEach(function (name) {
-        var button = document.createElement("button");
-        button.type = "button";
-        button.dataset.theme = name;
-        button.textContent = window.GLOBE_THEMES[name].label || name;
-        button.addEventListener("click", function () { selectTheme(name); });
-        buttonsEl.appendChild(button);
-      });
-
-      dragToggle.addEventListener("change", function () {
-        buildGlobe();
-        saveToAddressBar();
-      });
-
-      // Left/right arrow keys cycle through themes.
-      document.addEventListener("keydown", function (event) {
-        if (event.key !== "ArrowLeft" && event.key !== "ArrowRight") return;
-        var step = event.key === "ArrowRight" ? 1 : -1;
-        var index = (themeNames.indexOf(themeName) + step + themeNames.length) % themeNames.length;
-        selectTheme(themeNames[index]);
-      });
-
-      buildGlobe();
-      selectTheme(themeName);
+      ProjectGlobe.create(document.getElementById("hero-globe"));
     });
   </script>
 </body>

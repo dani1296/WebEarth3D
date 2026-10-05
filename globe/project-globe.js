@@ -5,14 +5,14 @@
 //   lib/globe.gl.min.js      3D globe library (globe.gl, MIT licence)
 //   lib/world-countries.js   country borders (Natural Earth)
 //   project-countries.js     the highlighted countries
-//   themes.js                the visual themes
+//   themes.js                the available themes
+//   settings.js              which theme to use, speed, etc.
 //
 // Then:
-//   var globe = ProjectGlobe.create(document.getElementById("hero-globe"), {
-//     theme: "midnight",
-//   });
-//   globe.setTheme("blueprint");   // switch theme later
-//   globe.destroy();               // remove it
+//   ProjectGlobe.create(document.getElementById("hero-globe"));
+//
+// Anything in settings.js can be overridden for one globe, e.g.
+//   ProjectGlobe.create(element, { theme: "blueprint" });
 //
 // The element you pass in must have a size (e.g. height: 100vh in CSS);
 // the globe fills it and follows it when it resizes.
@@ -20,11 +20,12 @@
 (function () {
   "use strict";
 
+  // Used when settings.js doesn't set a value.
   var DEFAULT_OPTIONS = {
     theme: "midnight",      // theme key from themes.js, or a theme object
     countries: null,        // list of countries; defaults to PROJECT_COUNTRIES
     secondsPerTurn: 60,     // time for one full rotation
-    interactive: false,     // true = visitors can drag to spin the globe (never zoom)
+    allowDragging: false,   // true = visitors can drag to spin the globe (never zoom)
     size: 0.8,              // globe diameter as a fraction of the container's shorter side
     view: { lat: 22, lng: 0 }, // starting point: lat = tilt towards north, lng = start longitude
     smallCountryKm2: 20000, // highlighted countries smaller than this get a marker
@@ -54,7 +55,7 @@
     if (!window.Globe) throw new Error("ProjectGlobe: globe.gl.min.js is not loaded.");
     if (!window.WORLD_COUNTRIES) throw new Error("ProjectGlobe: world-countries.js is not loaded.");
 
-    var options = Object.assign({}, DEFAULT_OPTIONS, userOptions);
+    var options = Object.assign({}, DEFAULT_OPTIONS, window.GLOBE_SETTINGS, userOptions);
     var countries = findCountries(options.countries || window.PROJECT_COUNTRIES || []);
     var shapes = buildShapes(countries.highlightedIds);
     var currentTheme = null;
@@ -62,7 +63,7 @@
     // The globe lives in its own layer so we don't change the host element's layout.
     var layer = document.createElement("div");
     layer.style.cssText = "position:absolute;inset:0;overflow:hidden;";
-    if (!options.interactive) layer.style.pointerEvents = "none"; // let clicks and scrolling pass through
+    if (!options.allowDragging) layer.style.pointerEvents = "none"; // let clicks and scrolling pass through
     if (getComputedStyle(container).position === "static") container.style.position = "relative";
     container.appendChild(layer);
 
@@ -97,8 +98,8 @@
     controls.autoRotateSpeed = 60 / options.secondsPerTurn;
     controls.enableZoom = false;
     controls.enablePan = false;
-    controls.enableRotate = options.interactive;
-    if (options.interactive) {
+    controls.enableRotate = options.allowDragging;
+    if (options.allowDragging) {
       // Horizontal drags spin the globe; vertical swipes still scroll the page on phones.
       controls.domElement.style.touchAction = "pan-y";
     }

@@ -1,8 +1,11 @@
-// Visual themes for the project globe.
+// Visual themes available for the project globe.
+//
+// The website uses the theme named in settings.js. To compare all of them
+// side by side, open tools/theme-picker.html.
 //
 // Each theme is a set of colours and options. To try a new look, copy one
 // of the themes below, give it a new key (e.g. "steel") and change values.
-// It will appear automatically in the theme buttons on the preview page.
+// It appears automatically as a button in the theme picker.
 //
 // Colours can be any CSS colour: "#22d3ee", "rgb(34, 211, 238)",
 // "rgba(34, 211, 238, 0.5)" (the last number is transparency, 0 to 1).
