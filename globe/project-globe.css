@@ -25,7 +25,7 @@
 /* Title and description */
 
 .project-globe-text {
-  max-width: 34rem;
+  max-width: 42rem;
   text-shadow: 0 1px 16px rgba(0, 0, 0, 0.55);
 }
 
@@ -115,6 +115,25 @@
   margin: 0;
   accent-color: var(--project-globe-accent, #22d3ee);
   cursor: pointer;
+}
+
+/* Light themes (detected from the theme's background colour). */
+
+.project-globe--light .project-globe-text {
+  text-shadow: 0 1px 14px rgba(255, 255, 255, 0.8);
+}
+
+.project-globe--light .project-globe-description {
+  opacity: 0.8;
+}
+
+.project-globe--light .project-globe-controls {
+  border-color: rgba(0, 0, 0, 0.12);
+  background: rgba(255, 255, 255, 0.6);
+}
+
+.project-globe--light .project-globe-mode button[aria-pressed="true"] {
+  background: rgba(0, 0, 0, 0.07);
 }
 
 /* Small phones: tighter buttons, and the slider without its "Speed" word. */

@@ -24,13 +24,13 @@
   // Used when settings.js doesn't set a value.
   var DEFAULT_OPTIONS = {
     theme: "midnight",      // theme key from themes.js, or a theme object
-    countries: null,        // list of countries; defaults to PROJECT_COUNTRIES
-    title: "",              // heading over the globe; {count} = number of countries
-    description: "",        // text under the heading; {count} works here too
+    countries: null,        // { country: projects }; defaults to PROJECT_COUNTRIES
+    title: "",              // heading over the globe; {projects} and {countries} become numbers
+    description: "",        // text under the heading; the same placeholders work here
     secondsPerTurn: 60,     // time for one full rotation; 0 = still
     allowDragging: false,   // true = start in drag mode (spin by hand, no auto-rotation)
     showControls: false,    // true = show the mode buttons and speed slider
-    labels: { rotate: "Auto-rotate", drag: "Drag", speed: "Speed" },
+    labels: { rotate: "Automático", drag: "Arrastrar", speed: "Velocidad" },
     size: 0.8,              // globe diameter as a fraction of the container's shorter side
     view: { lat: 22, lng: 0 }, // starting point: lat = tilt towards north, lng = start longitude
     smallCountryKm2: 20000, // highlighted countries smaller than this get a marker
@@ -52,7 +52,8 @@
     gridColor: null,
     markerColor: null,
     pulseAll: false,
-    textColor: "#e8eef6",
+    textColor: null,   // default: near white on dark backgrounds, near black on light ones
+    accentColor: null, // default: highlightColor
   };
 
   var BASE_ALTITUDE = 0.006; // keeps countries just above the sphere surface
@@ -77,7 +78,10 @@
     layer.style.cssText = "position:absolute;inset:0;overflow:hidden;";
     container.appendChild(layer);
 
-    var overlay = buildOverlay(options, countries.matched.length);
+    var overlay = buildOverlay(options, {
+      projects: countries.projectCount,
+      countries: countries.matched.length,
+    });
     container.appendChild(overlay.element);
 
     var globe = new window.Globe(layer, { animateIn: true })
@@ -173,8 +177,13 @@
       applyTheme(globe, currentTheme, shapes, countries, options);
       container.style.backgroundColor = currentTheme.background;
       // Colours for the title and controls (used in project-globe.css).
-      container.style.setProperty("--project-globe-text", currentTheme.textColor);
-      container.style.setProperty("--project-globe-accent", toRgbString(currentTheme.highlightColor));
+      var light = isLight(currentTheme.background);
+      container.classList.toggle("project-globe--light", light);
+      container.style.setProperty("--project-globe-text", currentTheme.textColor || (light ? "#1d1b19" : "#e8eef6"));
+      container.style.setProperty(
+        "--project-globe-accent",
+        toRgbString(currentTheme.accentColor || currentTheme.highlightColor)
+      );
     }
 
     setTheme(options.theme);
@@ -184,7 +193,8 @@
       getTheme: function () { return currentTheme; },
       setDragMode: setDragMode,
       setSpeed: setSpeed,
-      // Number of countries highlighted, and the ones from the list that were not recognised.
+      // Totals shown in the title, and countries from the list that were not recognised.
+      projectCount: countries.projectCount,
       countryCount: countries.matched.length,
       unknownCountries: countries.unknown,
       // The underlying globe.gl instance, for advanced tweaks.
@@ -232,26 +242,19 @@
   // ---------------------------------------------------------------------------
   // Title, description and controls over the globe
 
-  function buildOverlay(options, count) {
+  function buildOverlay(options, numbers) {
     var ui = { element: element("div", "project-globe-overlay") };
 
     if (options.title || options.description) {
       var text = element("div", "project-globe-text");
       if (options.title) {
         var title = element("h1", "project-globe-title");
-        options.title.split("{count}").forEach(function (part, index) {
-          if (index > 0) {
-            var number = element("span", "project-globe-count");
-            number.textContent = count;
-            title.appendChild(number);
-          }
-          title.appendChild(document.createTextNode(part));
-        });
+        fillText(title, options.title, numbers, true);
         text.appendChild(title);
       }
       if (options.description) {
         var description = element("p", "project-globe-description");
-        description.textContent = options.description.split("{count}").join(String(count));
+        fillText(description, options.description, numbers, false);
         text.appendChild(description);
       }
       ui.element.appendChild(text);
@@ -288,6 +291,21 @@
     }
 
     return ui;
+  }
+
+  // Writes `template` into `target`, replacing {projects} and {countries} with
+  // the numbers. With `highlight`, the numbers get the accent colour.
+  function fillText(target, template, numbers, highlight) {
+    template.split(/(\{projects\}|\{countries\})/).forEach(function (part) {
+      var key = part === "{projects}" ? "projects" : part === "{countries}" ? "countries" : null;
+      if (key && highlight) {
+        var number = element("span", "project-globe-count");
+        number.textContent = numbers[key];
+        target.appendChild(number);
+      } else {
+        target.appendChild(document.createTextNode(key ? String(numbers[key]) : part));
+      }
+    });
   }
 
   function element(tag, className) {
@@ -330,28 +348,36 @@
     return lookup;
   }
 
-  function findCountries(list) {
+  // Accepts { "Spain": 9, ... } (country -> number of projects) or a plain list of names.
+  function findCountries(input) {
+    var entries = Array.isArray(input)
+      ? input.map(function (name) { return [name, 0]; })
+      : Object.keys(input).map(function (name) { return [name, Number(input[name]) || 0]; });
     var map = getLookup();
     var matched = [];
     var unknown = [];
-    list.forEach(function (entry) {
-      var country = map.get(normalize(entry));
+    var projectCount = 0;
+    entries.forEach(function (entry) {
+      var country = map.get(normalize(entry[0]));
       if (country) {
         if (matched.indexOf(country) === -1) matched.push(country);
       } else {
-        unknown.push(entry);
+        unknown.push(entry[0]);
       }
+      // Projects count even if the country name has a typo: the total stays right.
+      projectCount += entry[1];
     });
     if (unknown.length) {
       console.warn(
-        "ProjectGlobe: these countries were not recognised and are not shown: " +
+        "ProjectGlobe: estos países no se han reconocido y no se muestran en el globo: " +
           unknown.map(function (name) { return '"' + name + '"'; }).join(", ") +
-          ". Check the spelling or use the 3-letter ISO code."
+          ". Revisa cómo están escritos o usa el código ISO de 3 letras."
       );
     }
     return {
       matched: matched,
       unknown: unknown,
+      projectCount: projectCount,
       highlightedIds: new Set(matched.map(function (c) { return c.id; })),
     };
   }
@@ -383,7 +409,7 @@
     if (typeof themeOrName === "string") {
       theme = (window.GLOBE_THEMES || {})[themeOrName];
       if (!theme) {
-        console.warn('ProjectGlobe: theme "' + themeOrName + '" not found in themes.js, using defaults.');
+        console.warn('ProjectGlobe: el tema "' + themeOrName + '" no existe en themes.js; se usan colores por defecto.');
         theme = {};
       }
     }
@@ -483,6 +509,11 @@
 
   function withAlpha(color, alpha) {
     return "rgba(" + toRgb(color).join(",") + "," + alpha + ")";
+  }
+
+  function isLight(color) {
+    var rgb = toRgb(color);
+    return (0.2126 * rgb[0] + 0.7152 * rgb[1] + 0.0722 * rgb[2]) / 255 > 0.6;
   }
 
   window.ProjectGlobe = { create: create };

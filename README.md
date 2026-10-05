@@ -1,6 +1,6 @@
 # WebEarth3D
 
-A rotating 3D globe for the front page of the office website. It highlights the countries where we have built projects, with a title, a short description and the number of countries shown over it.
+A rotating 3D globe for the front page of the office website. It highlights the countries where we have built projects, with a title (e.g. "24 proyectos en 8 países") and a short description over it. All visible text is in Spanish.
 
 Plain HTML, CSS and JavaScript, with no framework and no build step, so it can be added to any website.
 
@@ -25,22 +25,29 @@ Edit [globe/settings.js](globe/settings.js):
 |---|---|
 | `theme` | Which theme from `themes.js` the website uses |
 | `size` | Globe size as a fraction of the space it sits in (0.8 = 80%) |
-| `title` | Heading over the globe. `{count}` is replaced by the number of countries |
-| `description` | Short text under the heading (`{count}` works here too). Use `""` to hide |
+| `title` | Heading over the globe. `{projects}` and `{countries}` are replaced by the totals from `project-countries.js` |
+| `description` | Short text under the heading (the same placeholders work). Use `""` to hide |
 | `secondsPerTurn` | Time for one full rotation. 0 = still |
 | `allowDragging` | `false` = start spinning by itself; `true` = start in drag mode |
 | `showControls` | `true` = show the Auto-rotate / Drag buttons and the speed slider |
 | `labels` | Wording of those controls, e.g. for a Spanish version |
 
-In **Auto-rotate** mode the globe spins by itself; visitors can change the speed with the slider, and scrolling the page over the globe works normally. In **Drag** mode it stops, and visitors spin it by dragging. It never zooms.
+In **Automático** mode the globe spins by itself; visitors can change the speed with the slider, and scrolling the page over the globe works normally. In **Arrastrar** mode it stops, and visitors spin it by dragging. It never zooms.
 
-## Change the highlighted countries
+## Change the countries and number of projects
 
-Edit [globe/project-countries.js](globe/project-countries.js). Use one country per line, written as an English or Spanish name or an ISO code. If a name isn't recognised, a warning appears in the browser console.
+Edit [globe/project-countries.js](globe/project-countries.js). Each line is a country and its number of projects:
+
+```js
+"Spain": 9,
+"Mexico": 4,
+```
+
+The country can be an English or Spanish name or an ISO code. The title's totals are calculated from this list. If a name isn't recognised, a warning appears in the browser console.
 
 ## Create or tweak a theme
 
-Edit [globe/themes.js](globe/themes.js). Copy a theme, give it a new key and change the colours. It shows up in the theme picker automatically. Each option is explained at the top of that file. The text size and layout of the title and controls are in [globe/project-globe.css](globe/project-globe.css).
+Edit [globe/themes.js](globe/themes.js). There are five dark themes (Midnight, Dot Matrix, Blueprint, Ember, Hologram) and one light one (Paper). Copy a theme, give it a new key and change the colours. Light backgrounds are detected automatically, so the text and controls switch to dark colours. It shows up in the theme picker automatically. Each option is explained at the top of that file. The text size and layout of the title and controls are in [globe/project-globe.css](globe/project-globe.css).
 
 ## Add it to a website
 
@@ -72,7 +79,7 @@ The title and controls use the website's own font.
 index.html                    the globe as it will appear on the website
 globe/                        <- everything the website needs
   settings.js                 theme, text, speed, controls       <- edit
-  project-countries.js        the highlighted countries          <- edit
+  project-countries.js        countries and projects per country <- edit
   themes.js                   the available themes               <- edit
   project-globe.css           layout of the title and controls
   project-globe.js            the globe code

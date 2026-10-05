@@ -1,9 +1,9 @@
 <!doctype html>
-<html lang="en">
+<html lang="es">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Theme Picker</title>
+  <title>Selector de temas</title>
 
   <!--
     Internal tool for comparing globe themes and speeds. Not part of the website.
@@ -25,6 +25,14 @@
       --panel: rgba(10, 14, 22, 0.78);
       --panel-border: rgba(255, 255, 255, 0.1);
       --accent: #22d3ee;
+    }
+
+    /* Panel colours for light themes. */
+    body.light {
+      --text: #1d1b19;
+      --muted: rgba(29, 27, 25, 0.6);
+      --panel: rgba(255, 255, 255, 0.8);
+      --panel-border: rgba(0, 0, 0, 0.12);
     }
 
     * { box-sizing: border-box; }
@@ -99,7 +107,7 @@
       cursor: pointer;
     }
 
-    .panel button:hover { border-color: rgba(255, 255, 255, 0.3); }
+    .panel button:hover { border-color: var(--muted); }
 
     .panel button[aria-pressed="true"] {
       border-color: var(--accent);
@@ -123,7 +131,7 @@
   <section class="hero" id="hero-globe"></section>
 
   <div class="panel">
-    <p class="title">Theme picker &middot; internal tool</p>
+    <p class="title">Selector de temas &middot; herramienta interna</p>
     <div class="row" id="theme-buttons"></div>
     <p class="status">
       <span id="theme-status"></span><br>
@@ -160,7 +168,8 @@
         globe.setTheme(name);
         var theme = globe.getTheme();
         document.documentElement.style.setProperty("--page-bg", theme.background);
-        document.documentElement.style.setProperty("--accent", solidColor(theme.highlightColor));
+        document.documentElement.style.setProperty("--accent", solidColor(theme.accentColor || theme.highlightColor));
+        document.body.classList.toggle("light", container.classList.contains("project-globe--light"));
         Array.prototype.forEach.call(buttonsEl.children, function (button) {
           button.setAttribute("aria-pressed", String(button.dataset.theme === name));
         });
@@ -171,31 +180,31 @@
       function updateThemeStatus() {
         var inUseLabel = labelOf(themeInUse);
         if (themeName === themeInUse) {
-          themeStatusEl.innerHTML = "<strong>" + inUseLabel + "</strong> is the theme the website uses (●).";
+          themeStatusEl.innerHTML = "<strong>" + inUseLabel + "</strong> es el tema que usa la web (●).";
         } else {
           themeStatusEl.innerHTML =
-            "The website uses <strong>" + inUseLabel + "</strong> (●). To switch, set " +
-            '<code>theme: "' + themeName + '"</code> in globe/settings.js';
+            "La web usa <strong>" + inUseLabel + "</strong> (●). Para cambiarlo, pon " +
+            '<code>theme: "' + themeName + '"</code> en globe/settings.js';
         }
       }
 
       function updateSpeedStatus(secondsPerTurn) {
         if (secondsPerTurn === undefined || secondsPerTurn === speedInUse) {
-          speedStatusEl.innerHTML = "Speed: " + describeSpeed(speedInUse) + " (as in settings.js).";
+          speedStatusEl.innerHTML = "Velocidad: " + describeSpeed(speedInUse) + " (como en settings.js).";
         } else {
           speedStatusEl.innerHTML =
-            "Speed: " + describeSpeed(secondsPerTurn) + ". To make it the default, set " +
-            "<code>secondsPerTurn: " + secondsPerTurn + "</code> in globe/settings.js";
+            "Velocidad: " + describeSpeed(secondsPerTurn) + ". Para dejarla por defecto, pon " +
+            "<code>secondsPerTurn: " + secondsPerTurn + "</code> en globe/settings.js";
         }
       }
 
       function describeSpeed(secondsPerTurn) {
-        return secondsPerTurn > 0 ? "one turn every " + secondsPerTurn + " s" : "not rotating";
+        return secondsPerTurn > 0 ? "una vuelta cada " + secondsPerTurn + " s" : "sin rotación";
       }
 
       function labelOf(name) {
         var theme = window.GLOBE_THEMES[name];
-        return theme ? theme.label || name : '"' + name + '" (not found in themes.js)';
+        return theme ? theme.label || name : '"' + name + '" (no existe en themes.js)';
       }
 
       function saveToAddressBar() {
@@ -222,7 +231,7 @@
         button.textContent = labelOf(name);
         if (name === themeInUse) {
           button.classList.add("in-use");
-          button.setAttribute("aria-description", "The website uses this theme");
+          button.setAttribute("aria-description", "Es el tema que usa la web");
         }
         button.addEventListener("click", function () { selectTheme(name); });
         buttonsEl.appendChild(button);

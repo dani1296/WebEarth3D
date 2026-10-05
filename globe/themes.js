@@ -26,8 +26,10 @@
 //   gridColor             Latitude/longitude lines. null = no lines.
 //   markerColor           Pulsing markers on small countries. Defaults to highlightColor.
 //   pulseAll              true = pulsing markers on every highlighted country.
-//   textColor             Colour of the title and controls. Default "#e8eef6" (near white).
-//                         The country count and active button use highlightColor.
+//   textColor             Colour of the title and controls. Default: near white on a dark
+//                         background, near black on a light one.
+//   accentColor           Colour of the numbers in the title and the active button.
+//                         Defaults to highlightColor.
 
 window.GLOBE_THEMES = {
   midnight: {
@@ -106,5 +108,23 @@ window.GLOBE_THEMES = {
     atmosphereSize: 0.22,
     gridColor: "rgba(0, 255, 170, 0.08)",
     pulseAll: true,
+  },
+
+  // Light theme: like a technical drawing on paper, with sepia/terracotta accents.
+  paper: {
+    label: "Paper",
+    background: "#f5f2ed",
+    ocean: "#ffffff",
+    countryStyle: "solid",
+    countryColor: "rgba(60, 45, 30, 0.04)",
+    borderColor: "rgba(28, 24, 20, 0.5)",
+    highlightColor: "#1f1b17",
+    highlightBorderColor: "#1f1b17",
+    highlightLift: 0.01,
+    atmosphereColor: null,
+    gridColor: "rgba(168, 96, 48, 0.22)",
+    markerColor: "#b0602c",
+    accentColor: "#a8582a",
+    pulseAll: false,
   },
 };
