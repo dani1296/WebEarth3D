@@ -1,0 +1,259 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Maqueta de la portada (Wix)</title>
+
+  <!--
+    Internal mock of the Wix home page with the split hero, to review the
+    design before touching the real site. Not part of the website.
+
+    Left column: the Wix site's own headline, text and buttons (in the real
+    site these stay as Wix elements). Right column: our globe page
+    (../index.html) inside an iframe, exactly how Wix's "Embed a site" box
+    will show it.
+  -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap">
+
+  <style>
+    /* Colours and font taken from the Wix site. */
+    :root {
+      --text: #1d1d1f;
+      --text-soft: #565657;
+      --blue: #0071e3;
+      --grey-band: #f5f5f7;
+      --header-height: 86px;
+    }
+
+    * { box-sizing: border-box; }
+
+    html, body {
+      margin: 0;
+      background: #ffffff;
+      color: var(--text);
+      font-family: Inter, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    }
+
+    /* Header (simplified copy of the Wix one) */
+
+    header {
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      height: var(--header-height);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 24px;
+      background: #ffffff;
+    }
+
+    .logo {
+      width: 96px;
+      height: 52px;
+      display: grid;
+      place-items: center;
+      border: 1px dashed rgba(0, 0, 0, 0.2);
+      border-radius: 6px;
+      font-size: 0.7rem;
+      color: var(--text-soft);
+    }
+
+    nav {
+      display: flex;
+      gap: clamp(24px, 8vw, 120px);
+      font-size: 0.8rem;
+    }
+
+    nav a {
+      color: var(--text);
+      text-decoration: none;
+    }
+
+    nav a:first-child { color: #9a9a9e; }
+
+    .language {
+      padding: 6px 12px;
+      border: 1px solid rgba(0, 0, 0, 0.25);
+      border-radius: 999px;
+      font-size: 0.75rem;
+    }
+
+    /* Split hero */
+
+    .hero {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr);
+      align-items: center;
+      gap: clamp(16px, 3vw, 48px);
+      max-width: 1320px;
+      min-height: calc(100vh - var(--header-height));
+      min-height: calc(100svh - var(--header-height));
+      margin: 0 auto;
+      padding: 24px clamp(16px, 4vw, 64px) 40px;
+    }
+
+    .hero h1 {
+      margin: 0;
+      font-size: clamp(2.25rem, 4.4vw, 4rem);
+      font-weight: 700;
+      line-height: 1.05;
+      letter-spacing: -0.02em;
+      color: var(--text-soft);
+    }
+
+    .hero .subtitle {
+      margin: 24px 0 0;
+      max-width: 30rem;
+      font-size: clamp(1rem, 1.4vw, 1.25rem);
+      font-weight: 700;
+      line-height: 1.45;
+      color: var(--text-soft);
+    }
+
+    .buttons {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 16px;
+      margin-top: 32px;
+    }
+
+    .button {
+      display: inline-block;
+      padding: 14px 24px;
+      border-radius: 50px;
+      font-size: 0.9rem;
+      font-weight: 700;
+      text-decoration: none;
+    }
+
+    .button.primary {
+      color: #ffffff;
+      background: var(--blue);
+    }
+
+    .button.secondary {
+      color: var(--blue);
+      background: #ffffff;
+      border: 1px solid rgba(0, 0, 0, 0.12);
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+    }
+
+    /* The embedded globe page: this box is what Wix's "Embed a site" element becomes. */
+    .globe-frame {
+      display: block;
+      width: 100%;
+      height: min(680px, calc(100svh - var(--header-height) - 64px));
+      min-height: 460px;
+      border: 0;
+    }
+
+    /* Stats band (copy of the section that follows on the Wix site) */
+
+    .stats {
+      padding: 72px 24px 88px;
+      background: var(--grey-band);
+      text-align: center;
+    }
+
+    .stats h2 {
+      margin: 0 0 48px;
+      font-size: clamp(1.75rem, 4vw, 3.5rem);
+      letter-spacing: -0.02em;
+    }
+
+    .stats ul {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 40px 80px;
+      max-width: 1000px;
+      margin: 0 auto;
+      padding: 0;
+      list-style: none;
+    }
+
+    .stats strong {
+      display: block;
+      font-size: clamp(2rem, 4vw, 2.75rem);
+    }
+
+    .stats span {
+      font-size: 0.95rem;
+    }
+
+    .mock-note {
+      position: fixed;
+      left: 12px;
+      bottom: 12px;
+      z-index: 20;
+      padding: 6px 10px;
+      border-radius: 8px;
+      background: rgba(29, 29, 31, 0.85);
+      color: #ffffff;
+      font-size: 0.7rem;
+    }
+
+    /* Phones and narrow tablets: text first, then the globe. */
+    @media (max-width: 860px) {
+      nav { display: none; }
+
+      .hero {
+        grid-template-columns: 1fr;
+        min-height: 0;
+        padding-top: 16px;
+        text-align: center;
+      }
+
+      .hero .subtitle { margin-left: auto; margin-right: auto; }
+      .buttons { justify-content: center; }
+
+      .globe-frame {
+        height: 460px;
+        min-height: 0;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="logo">logo</div>
+    <nav>
+      <a href="#">Luis Bozzo</a>
+      <a href="#">Nosotros</a>
+      <a href="#">Proyectos</a>
+      <a href="#">Contacto</a>
+    </nav>
+    <div class="language">Español</div>
+  </header>
+
+  <section class="hero">
+    <div>
+      <h1>Innovación e Ingeniería Estructural de Vanguardia</h1>
+      <p class="subtitle">Más de 80 años redefiniendo los límites de la arquitectura y la protección sísmica en el mundo.</p>
+      <div class="buttons">
+        <a class="button primary" href="#">Ver Proyectos</a>
+        <a class="button secondary" href="#">Contáctanos</a>
+      </div>
+    </div>
+
+    <iframe class="globe-frame" src="../index.html" title="Globo con los países donde tenemos proyectos"></iframe>
+  </section>
+
+  <section class="stats">
+    <h2>Liderazgo Estructural en Números</h2>
+    <ul>
+      <li><strong>+80 años</strong><span>De innovación continua desde 1939</span></li>
+      <li><strong>+10</strong><span>Países</span></li>
+      <li><strong>+2,000</strong><span>Proyectos calculados y desarrollados</span></li>
+      <li><strong>+3,000</strong><span>Disipadores sísmicos SLB instalados</span></li>
+      <li><strong>&gt;1.200.000 m²</strong><span>De estructura proyectada al año</span></li>
+    </ul>
+  </section>
+
+  <div class="mock-note">Maqueta local de la portada de Wix &middot; solo para revisar el diseño</div>
+</body>
+</html>

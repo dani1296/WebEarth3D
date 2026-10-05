@@ -6,12 +6,19 @@
   <title>Nuestros proyectos en el mundo</title>
 
   <!--
-    Example of the globe as it will appear on the website.
-    To add it to the real site: copy the globe/ folder, then copy the
-    stylesheet and six scripts below, the #hero-globe element and the small
-    script at the bottom.
+    The globe page. This is what the Wix site will show inside an
+    "Embed a site" box, so it only contains the globe: the headline and
+    buttons beside it are Wix's own. The globe fills whatever size the box has.
+    To preview it inside a mock of the Wix home page, open tools/wix-preview.html.
+
     Theme, text, speed and controls are set in globe/settings.js.
   -->
+
+  <!-- Inter, the font the Wix site uses. -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap">
+
   <link rel="stylesheet" href="globe/project-globe.css">
   <script defer src="globe/lib/globe.gl.min.js"></script>
   <script defer src="globe/lib/world-countries.js"></script>
@@ -23,22 +30,21 @@
   <style>
     html, body {
       margin: 0;
-      background: #02050b;
-      font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+      font-family: Inter, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
     }
 
-    #hero-globe {
+    #globe {
       height: 100vh;
       height: 100svh;
     }
   </style>
 </head>
 <body>
-  <section id="hero-globe"></section>
+  <div id="globe"></div>
 
   <script>
     document.addEventListener("DOMContentLoaded", function () {
-      ProjectGlobe.create(document.getElementById("hero-globe"));
+      ProjectGlobe.create(document.getElementById("globe"));
     });
   </script>
 </body>

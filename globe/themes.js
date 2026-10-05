@@ -14,6 +14,7 @@
 //   label                 Name shown on the preview page.
 //   background            Colour behind the globe.
 //   ocean                 Colour of the globe's sphere.
+//   shading               3D lighting on the sphere: 1 = full (default), 0 = flat colour.
 //   countryStyle          "solid" (filled shapes) or "dots" (a grid of dots).
 //   dotDensity            Only for "dots": 2 (big, sparse) to 4 (small, dense). Default 3.
 //   countryColor          Countries without projects. Use "transparent" to hide them.
@@ -24,8 +25,8 @@
 //   atmosphereColor       Glow around the globe. null = no glow.
 //   atmosphereSize        Glow thickness, e.g. 0.1 (thin) to 0.3 (wide).
 //   gridColor             Latitude/longitude lines. null = no lines.
-//   markerColor           Pulsing markers on small countries. Defaults to highlightColor.
-//   pulseAll              true = pulsing markers on every highlighted country.
+//   pulseAll              true = pulsing rings on every highlighted country.
+//   markerColor           Colour of those rings. Defaults to highlightColor.
 //   textColor             Colour of the title and controls. Default: near white on a dark
 //                         background, near black on a light one.
 //   accentColor           Colour of the numbers in the title and the active button.
@@ -108,6 +109,25 @@ window.GLOBE_THEMES = {
     atmosphereSize: 0.22,
     gridColor: "rgba(0, 255, 170, 0.08)",
     pulseAll: true,
+  },
+
+  // Light theme matched to the website: white, near-black and the site's blue.
+  website: {
+    label: "Website",
+    background: "#ffffff",
+    ocean: "#f5f5f7",
+    shading: 0.3,
+    countryStyle: "solid",
+    countryColor: "rgba(29, 29, 31, 0.06)",
+    borderColor: "rgba(29, 29, 31, 0.28)",
+    highlightColor: "#1d1d1f",
+    highlightBorderColor: "#1d1d1f",
+    highlightLift: 0.008,
+    atmosphereColor: null,
+    gridColor: "rgba(29, 29, 31, 0.06)",
+    accentColor: "#0071e3",
+    textColor: "#1d1d1f",
+    pulseAll: false,
   },
 
   // Light theme: like a technical drawing on paper, with sepia/terracotta accents.

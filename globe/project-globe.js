@@ -24,22 +24,27 @@
   // Used when settings.js doesn't set a value.
   var DEFAULT_OPTIONS = {
     theme: "midnight",      // theme key from themes.js, or a theme object
-    countries: null,        // { country: projects }; defaults to PROJECT_COUNTRIES
-    title: "",              // heading over the globe; {projects} and {countries} become numbers
+    countries: null,        // list of countries; defaults to PROJECT_COUNTRIES
+    layout: "full",         // "full": text over the globe's bottom left; "split": caption centred under it
+    title: "",              // heading; {projects} and {countries} are replaced by the totals
     description: "",        // text under the heading; the same placeholders work here
+    projectsTotal: "",      // text for {projects}, e.g. "+2,000"
+    countriesTotal: "auto", // text for {countries}; "auto" = number of highlighted countries
     secondsPerTurn: 60,     // time for one full rotation; 0 = still
     allowDragging: false,   // true = start in drag mode (spin by hand, no auto-rotation)
     showControls: false,    // true = show the mode buttons and speed slider
     labels: { rotate: "Automático", drag: "Arrastrar", speed: "Velocidad" },
     size: 0.8,              // globe diameter as a fraction of the container's shorter side
     view: { lat: 22, lng: 0 }, // starting point: lat = tilt towards north, lng = start longitude
-    smallCountryKm2: 20000, // highlighted countries smaller than this get a marker
+    smallCountryKm2: 20000, // highlighted countries smaller than this are drawn as a dot...
+    smallCountryDotSize: 1.4, // ...of this radius, in degrees (~155 km), so they stay visible
     onSpeedChange: null,    // function (secondsPerTurn) called when the slider moves
   };
 
   var THEME_DEFAULTS = {
     background: "#000000",
     ocean: "#0a0a0a",
+    shading: 1,        // 1 = full 3D lighting on the sphere, 0 = flat colour
     countryStyle: "solid",
     dotDensity: 3,
     countryColor: "rgba(255, 255, 255, 0.2)",
@@ -67,11 +72,12 @@
     var options = Object.assign({}, DEFAULT_OPTIONS, window.GLOBE_SETTINGS, userOptions);
     options.labels = Object.assign({}, DEFAULT_OPTIONS.labels, options.labels);
     var countries = findCountries(options.countries || window.PROJECT_COUNTRIES || []);
-    var shapes = buildShapes(countries.highlightedIds);
+    var shapes = buildShapes(countries, options);
     var currentTheme = null;
 
     if (getComputedStyle(container).position === "static") container.style.position = "relative";
-    container.classList.add("project-globe");
+    var layoutClass = "project-globe--" + (options.layout === "split" ? "split" : "full");
+    container.classList.add("project-globe", layoutClass);
 
     // The globe lives in its own layer so we don't change the host element's layout.
     var layer = document.createElement("div");
@@ -79,8 +85,8 @@
     container.appendChild(layer);
 
     var overlay = buildOverlay(options, {
-      projects: countries.projectCount,
-      countries: countries.matched.length,
+      projects: options.projectsTotal,
+      countries: options.countriesTotal === "auto" ? countries.matched.length : options.countriesTotal,
     });
     container.appendChild(overlay.element);
 
@@ -92,18 +98,19 @@
       .hexPolygonGeoJsonGeometry("shape")
       .pathTransitionDuration(0)
       .ringLat("lat")
-      .ringLng("lng")
-      .pointLat("lat")
-      .pointLng("lng")
-      .pointRadius(0.7)
-      .pointAltitude(0.008);
+      .ringLng("lng");
 
     function fitToContainer() {
       var width = container.clientWidth;
       var height = container.clientHeight;
       if (!width || !height) return;
-      globe.width(width).height(height);
-      globe.pointOfView({ altitude: fitAltitude(globe.camera().fov, width, height, options.size) }, 0);
+      // In the split layout the caption sits under the globe, so the globe
+      // uses the space above it and is moved up by half the caption's height.
+      var reserved = options.layout === "split" ? overlay.element.offsetHeight : 0;
+      var globeHeight = Math.max(height - reserved, 1);
+      var diameter = options.size * Math.min(width, globeHeight);
+      globe.width(width).height(height).globeOffset([0, -reserved / 2]);
+      globe.pointOfView({ altitude: fitAltitude(globe.camera().fov, height, diameter) }, 0);
     }
 
     globe.pointOfView({ lat: options.view.lat, lng: options.view.lng }, 0);
@@ -164,6 +171,7 @@
     // Follow the container's size.
     var resizeObserver = new ResizeObserver(fitToContainer);
     resizeObserver.observe(container);
+    resizeObserver.observe(overlay.element); // e.g. when the web font loads and the caption changes height
 
     // Stop drawing while the globe is scrolled out of view.
     var visibilityObserver = new IntersectionObserver(function (entries) {
@@ -193,8 +201,7 @@
       getTheme: function () { return currentTheme; },
       setDragMode: setDragMode,
       setSpeed: setSpeed,
-      // Totals shown in the title, and countries from the list that were not recognised.
-      projectCount: countries.projectCount,
+      // Number of countries highlighted, and the ones from the list that were not recognised.
       countryCount: countries.matched.length,
       unknownCountries: countries.unknown,
       // The underlying globe.gl instance, for advanced tweaks.
@@ -205,16 +212,16 @@
         globe._destructor();
         layer.remove();
         overlay.element.remove();
-        container.classList.remove("project-globe");
+        container.classList.remove("project-globe", layoutClass);
       },
     };
   }
 
-  // Camera distance (in globe radii above the surface) at which the globe's
-  // diameter fills `size` of the container's shorter side.
-  function fitAltitude(fovDeg, width, height, size) {
+  // Camera distance (in globe radii above the surface) at which the globe
+  // appears `diameter` pixels wide in a view `viewHeight` pixels tall.
+  function fitAltitude(fovDeg, viewHeight, diameter) {
     var halfFov = (fovDeg / 2) * (Math.PI / 180); // camera fov is vertical
-    var screenRadius = size * Math.min(1, width / height) * Math.tan(halfFov);
+    var screenRadius = (diameter / viewHeight) * Math.tan(halfFov);
     return 1 / Math.sin(Math.atan(screenRadius)) - 1;
   }
 
@@ -348,24 +355,19 @@
     return lookup;
   }
 
-  // Accepts { "Spain": 9, ... } (country -> number of projects) or a plain list of names.
+  // Accepts a list of names, or an object whose keys are names.
   function findCountries(input) {
-    var entries = Array.isArray(input)
-      ? input.map(function (name) { return [name, 0]; })
-      : Object.keys(input).map(function (name) { return [name, Number(input[name]) || 0]; });
+    var names = Array.isArray(input) ? input : Object.keys(input);
     var map = getLookup();
     var matched = [];
     var unknown = [];
-    var projectCount = 0;
-    entries.forEach(function (entry) {
-      var country = map.get(normalize(entry[0]));
+    names.forEach(function (name) {
+      var country = map.get(normalize(name));
       if (country) {
         if (matched.indexOf(country) === -1) matched.push(country);
       } else {
-        unknown.push(entry[0]);
+        unknown.push(name);
       }
-      // Projects count even if the country name has a typo: the total stays right.
-      projectCount += entry[1];
     });
     if (unknown.length) {
       console.warn(
@@ -377,28 +379,50 @@
     return {
       matched: matched,
       unknown: unknown,
-      projectCount: projectCount,
       highlightedIds: new Set(matched.map(function (c) { return c.id; })),
     };
   }
 
-  // One object per country shape, flagged if it is highlighted.
-  function buildShapes(highlightedIds) {
-    return window.WORLD_COUNTRIES
+  // One object per country shape, flagged if it is highlighted. Highlighted
+  // countries too small to see (Bahrain, Singapore...) are drawn as a round
+  // "country" instead, larger than real life but styled like the others.
+  function buildShapes(countries, options) {
+    var dotIds = new Set(
+      countries.matched
+        .filter(function (country) { return !country.shape || country.areaKm2 < options.smallCountryKm2; })
+        .map(function (country) { return country.id; })
+    );
+    var shapes = window.WORLD_COUNTRIES
       .filter(function (country) { return country.shape; })
       .map(function (country) {
-        return { shape: country.shape, highlighted: highlightedIds.has(country.id) };
+        var highlighted = countries.highlightedIds.has(country.id) && !dotIds.has(country.id);
+        return { shape: country.shape, highlighted: highlighted };
       });
+    countries.matched.forEach(function (country) {
+      if (!dotIds.has(country.id)) return;
+      var dot = circle(country.label[1], country.label[0], options.smallCountryDotSize);
+      shapes.push({ shape: dot, highlighted: true, dot: true });
+    });
+    return shapes;
   }
 
-  function markerCountries(countries, theme, options) {
-    return countries.matched
-      .filter(function (country) {
-        return theme.pulseAll || !country.shape || country.areaKm2 < options.smallCountryKm2;
-      })
-      .map(function (country) {
-        return { lat: country.label[1], lng: country.label[0] };
-      });
+  // A round GeoJSON polygon around lat/lng with the given radius in degrees.
+  function circle(lat, lng, radius) {
+    var ring = [];
+    var steps = 32;
+    var lngScale = 1 / Math.max(Math.cos((lat * Math.PI) / 180), 0.2);
+    for (var i = 0; i <= steps; i++) { // north, east, south, west: clockwise, like the Natural Earth outlines
+      var angle = (i / steps) * 2 * Math.PI;
+      ring.push([lng + radius * Math.sin(angle) * lngScale, lat + radius * Math.cos(angle)]);
+    }
+    return { type: "Polygon", coordinates: [ring] };
+  }
+
+  // Where to put pulsing rings (only for themes with pulseAll).
+  function ringPoints(countries) {
+    return countries.matched.map(function (country) {
+      return { lat: country.label[1], lng: country.label[0] };
+    });
   }
 
   // ---------------------------------------------------------------------------
@@ -418,11 +442,20 @@
 
   function applyTheme(globe, theme, shapes, countries, options) {
     var highlightBorder = theme.highlightBorderColor || theme.highlightColor;
-    var markerRgb = toRgb(theme.markerColor || theme.highlightColor);
+    var ringRgb = toRgb(theme.markerColor || theme.highlightColor);
     var useDots = theme.countryStyle === "dots";
+    // Dots for small countries sit a hair above the others so they never flicker against them.
+    function altitude(d) {
+      if (!d.highlighted) return BASE_ALTITUDE;
+      return BASE_ALTITUDE + theme.highlightLift + (d.dot ? 0.001 : 0);
+    }
 
     globe.backgroundColor(theme.background);
-    globe.globeMaterial().color.set(toRgbString(theme.ocean));
+    // Less shading = part of the ocean colour is "self-lit" and ignores the lights.
+    var material = globe.globeMaterial();
+    var shading = Math.min(Math.max(theme.shading, 0), 1);
+    material.color.set(toRgbString(theme.ocean)).multiplyScalar(shading);
+    material.emissive.set(toRgbString(theme.ocean)).multiplyScalar(1 - shading);
 
     globe
       .showAtmosphere(Boolean(theme.atmosphereColor))
@@ -437,9 +470,7 @@
         .hexPolygonResolution(theme.dotDensity)
         .hexPolygonMargin(0.35)
         .hexPolygonColor(function (d) { return d.highlighted ? theme.highlightColor : theme.countryColor; })
-        .hexPolygonAltitude(function (d) {
-          return d.highlighted ? BASE_ALTITUDE + theme.highlightLift : BASE_ALTITUDE;
-        });
+        .hexPolygonAltitude(altitude);
     } else {
       globe
         .hexPolygonsData([])
@@ -447,23 +478,17 @@
         .polygonCapColor(function (d) { return d.highlighted ? theme.highlightColor : theme.countryColor; })
         .polygonSideColor(function (d) { return d.highlighted ? withAlpha(theme.highlightColor, 0.35) : "rgba(0,0,0,0)"; })
         .polygonStrokeColor(function (d) { return d.highlighted ? highlightBorder : theme.borderColor; })
-        .polygonAltitude(function (d) {
-          return d.highlighted ? BASE_ALTITUDE + theme.highlightLift : BASE_ALTITUDE;
-        });
+        .polygonAltitude(altitude);
     }
 
     globe
       .pathsData(theme.gridColor ? gridLines() : [])
       .pathColor(function () { return theme.gridColor; });
 
-    // Markers are always drawn fully opaque so they stay visible on any theme.
-    var markers = markerCountries(countries, theme, options);
     globe
-      .pointsData(markers)
-      .pointColor(function () { return "rgb(" + markerRgb.join(",") + ")"; })
-      .ringsData(markers)
+      .ringsData(theme.pulseAll ? ringPoints(countries) : [])
       .ringColor(function () {
-        return function (t) { return "rgba(" + markerRgb.join(",") + "," + (1 - t) + ")"; };
+        return function (t) { return "rgba(" + ringRgb.join(",") + "," + (1 - t) + ")"; };
       })
       .ringMaxRadius(4)
       .ringPropagationSpeed(2)

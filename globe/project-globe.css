@@ -117,6 +117,34 @@
   cursor: pointer;
 }
 
+/* Split layout: a caption and the controls centred under the globe, for when
+   the page's own headline sits beside the globe. */
+
+.project-globe--split .project-globe-overlay {
+  flex-direction: column;
+  flex-wrap: nowrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 14px;
+  padding: 0 16px 16px;
+  text-align: center;
+}
+
+.project-globe--split .project-globe-text {
+  max-width: 100%;
+  text-shadow: none;
+}
+
+.project-globe--split .project-globe-title {
+  font-size: clamp(1.25rem, 4vw, 1.75rem);
+  letter-spacing: -0.015em;
+}
+
+.project-globe--split .project-globe-description {
+  margin: 0.4rem auto 0;
+  font-size: 0.95rem;
+}
+
 /* Light themes (detected from the theme's background colour). */
 
 .project-globe--light .project-globe-text {

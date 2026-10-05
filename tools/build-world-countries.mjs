@@ -22,6 +22,7 @@ const EXTRA_NAMES = {
   GBR: ['UK', 'Great Britain'],
   ARE: ['UAE'],
   USA: ['US'],
+  BHR: ['Bahréin'], // spelling used on the Wix site (Natural Earth has "Baréin")
 };
 
 const EARTH_RADIUS_KM = 6371.0088;
