@@ -19,18 +19,25 @@
 //
 // Movement
 //   secondsPerTurn  Time for one full rotation. Bigger number = slower. 0 = still.
-//   allowDragging   false = start spinning by itself.
-//                   true  = start in drag mode: visitors spin it by hand and it
-//                           doesn't turn on its own.
+//   startExploring  false = start spinning by itself ("Automático"). Clicking the
+//                           globe switches to "Explorar".
+//                   true  = start in "Explorar": the globe doesn't turn on its own,
+//                           visitors spin it by hand and click countries to open
+//                           their page.
 //   showControls    true = show buttons to switch between those two modes, plus a
 //                   speed slider while it spins by itself.
 //   labels          Wording of the controls.
 //
+// Country pages
+//   pagesUrl        Goes in front of each country's page address from
+//                   project-countries.js: "https://www.luisbozzo.com/" + "mexico".
+//                   Each language has its own (see below). "" = countries can't be clicked.
+//
 // Other languages (see "languages" at the bottom)
 //   The globe's address chooses the language: ...WebEarth3D/?lang=en shows the
 //   "en" texts. In Wix, each language version of the page uses its own address.
-//   A language can change any of the text settings above; anything it doesn't
-//   set uses the Spanish value.
+//   A language can change any of the settings above (usually the texts and
+//   pagesUrl); anything it doesn't set uses the Spanish value.
 
 window.GLOBE_SETTINGS = {
   theme: "website",
@@ -43,21 +50,25 @@ window.GLOBE_SETTINGS = {
   countriesTotal: "+15",
 
   secondsPerTurn: 10,
-  allowDragging: false,
+  startExploring: false,
   showControls: true,
-  labels: { rotate: "Automático", drag: "Arrastrar", speed: "Velocidad" },
+  labels: { rotate: "Automático", explore: "Explorar", speed: "Velocidad" },
+
+  pagesUrl: "https://www.luisbozzo.com/",
 
   languages: {
     // Català: ...WebEarth3D/?lang=ca
     ca: {
       title: "{projects} projectes en {countries} països",
-      labels: { rotate: "Automàtic", drag: "Arrossegar", speed: "Velocitat" },
+      labels: { rotate: "Automàtic", explore: "Explorar", speed: "Velocitat" },
+      pagesUrl: "https://www.luisbozzo.com/ca/",
     },
 
     // English: ...WebEarth3D/?lang=en
     en: {
       title: "{projects} projects in {countries} countries",
-      labels: { rotate: "Auto-rotate", drag: "Drag", speed: "Speed" },
+      labels: { rotate: "Auto-rotate", explore: "Explore", speed: "Speed" },
+      pagesUrl: "https://www.luisbozzo.com/en/",
     },
 
     // 日本語: ...WebEarth3D/?lang=ja
@@ -67,7 +78,8 @@ window.GLOBE_SETTINGS = {
       title: "{countries}か国以上で{projects}件以上のプロジェクト",
       projectsTotal: "2,000",
       countriesTotal: "15",
-      labels: { rotate: "自動回転", drag: "ドラッグ", speed: "速度" },
+      labels: { rotate: "自動回転", explore: "探索", speed: "速度" },
+      pagesUrl: "https://www.luisbozzo.com/ja/",
     },
   },
 };

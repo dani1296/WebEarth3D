@@ -27,16 +27,17 @@
   // Used when settings.js doesn't set a value.
   var DEFAULT_OPTIONS = {
     theme: "midnight",      // theme key from themes.js, or a theme object
-    countries: null,        // list of countries; defaults to PROJECT_COUNTRIES
+    countries: null,        // list of countries, or country -> page address; defaults to PROJECT_COUNTRIES
     layout: "full",         // "full": text over the globe's bottom left; "split": caption centred under it
     title: "",              // heading; {projects} and {countries} are replaced by the totals
     description: "",        // text under the heading; the same placeholders work here
     projectsTotal: "",      // text for {projects}, e.g. "+2,000"
     countriesTotal: "auto", // text for {countries}; "auto" = number of highlighted countries
     secondsPerTurn: 10,     // time for one full rotation; 0 = still
-    allowDragging: false,   // true = start in drag mode (spin by hand, no auto-rotation)
+    startExploring: false,  // true = start in explore mode (spin by hand and click countries, no auto-rotation)
     showControls: false,    // true = show the mode buttons and speed slider
-    labels: { rotate: "Automático", drag: "Arrastrar", speed: "Velocidad" },
+    labels: { rotate: "Automático", explore: "Explorar", speed: "Velocidad" },
+    pagesUrl: "",           // put before a country's page address to open it; "" = countries can't be clicked
     size: 0.8,              // globe diameter as a fraction of the container's shorter side
     view: { lat: 22, lng: 0 }, // starting point: lat = tilt towards north, lng = start longitude
     smallCountryKm2: 20000, // highlighted countries smaller than this are drawn as a dot...
@@ -62,12 +63,15 @@
     pulseAll: false,
     textColor: null,   // default: near white on dark backgrounds, near black on light ones
     accentColor: null, // default: highlightColor
+    hoverColor: null,  // default: accentColor if set, else textColor
   };
 
   var DEFAULT_LANGUAGE = "es"; // the language of the main texts in settings.js
   var BASE_ALTITUDE = 0.006; // keeps countries just above the sphere surface
   var GRID_STEP_DEG = 15;
   var MAX_DEGREES_PER_SECOND = 216; // fastest slider position: one turn every ~1.7 s
+  var CLICK_MAX_MOVE_PX = 6; // a press that moves further than this is a drag, not a click
+  var HIT_MARGIN_PX = 8;     // a click this close to a country with a page still opens it
 
   function create(container, userOptions) {
     if (!window.Globe) throw new Error("ProjectGlobe: globe.gl.min.js is not loaded.");
@@ -111,6 +115,8 @@
       .ringLat("lat")
       .ringLng("lng");
 
+    var pixelsPerDegree = 1; // along the globe's surface, at its centre
+
     function fitToContainer() {
       var width = container.clientWidth;
       var height = container.clientHeight;
@@ -120,6 +126,7 @@
       var reserved = options.layout === "split" ? overlay.element.offsetHeight : 0;
       var globeHeight = Math.max(height - reserved, 1);
       var diameter = options.size * Math.min(width, globeHeight);
+      pixelsPerDegree = (diameter / 2) * (Math.PI / 180);
       globe.width(width).height(height).globeOffset([0, -reserved / 2]);
       globe.pointOfView({ altitude: fitAltitude(globe.camera().fov, height, diameter) }, 0);
     }
@@ -131,32 +138,159 @@
     controls.enableZoom = false;
     controls.enablePan = false;
 
-    // --- Movement: auto-rotate mode (spins by itself) or drag mode (spin by hand).
+    // --- Modes. Automático: the globe spins by itself and scrolling passes
+    // straight through it; clicking the globe switches to Explorar. Explorar:
+    // visitors spin it by hand, and clicking a highlighted country that has a
+    // page opens that page.
 
     var reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     var degreesPerSecond = reduceMotion ? 0 : speedFromSeconds(options.secondsPerTurn);
-    var dragMode = false;
+    var exploreMode = false;
 
     function updateMovement() {
-      controls.autoRotate = !dragMode && degreesPerSecond > 0;
+      controls.autoRotate = !exploreMode && degreesPerSecond > 0;
       controls.autoRotateSpeed = degreesPerSecond / 6; // three.js unit: 1 = one turn per 60 s
     }
 
-    function setDragMode(on) {
-      dragMode = Boolean(on);
-      controls.enableRotate = dragMode;
-      // Outside drag mode, clicks and scrolling pass straight through the globe.
-      layer.style.pointerEvents = dragMode ? "auto" : "none";
-      layer.style.cursor = dragMode ? "grab" : "";
-      // In drag mode, horizontal drags spin the globe; vertical swipes still scroll the page on phones.
-      controls.domElement.style.touchAction = dragMode ? "pan-y" : "";
+    function setExploreMode(on) {
+      exploreMode = Boolean(on);
+      controls.enableRotate = exploreMode;
+      // In Automático the globe ignores the mouse, so scrolling passes straight through.
+      layer.style.pointerEvents = exploreMode ? "auto" : "none";
+      // In Explorar, horizontal drags spin the globe; vertical swipes still scroll the page on phones.
+      controls.domElement.style.touchAction = exploreMode ? "pan-y" : "";
       updateMovement();
+      updatePointer();
       if (overlay.rotateButton) {
-        overlay.rotateButton.setAttribute("aria-pressed", String(!dragMode));
-        overlay.dragButton.setAttribute("aria-pressed", String(dragMode));
-        overlay.speed.hidden = dragMode;
+        overlay.rotateButton.setAttribute("aria-pressed", String(!exploreMode));
+        overlay.exploreButton.setAttribute("aria-pressed", String(exploreMode));
+        overlay.speed.hidden = exploreMode;
       }
     }
+
+    // --- Mouse and touch on the globe
+
+    var highlightedShapes = shapes.filter(function (d) { return d.highlighted; });
+    var shapesWithPage = shapes.filter(function (d) { return d.url; });
+    var hovered = null;   // the country with a page under the mouse (Explorar only)
+    var mouse = null;     // the mouse's last position over the globe, or null
+    var press = null;     // where the last press (mouse or finger) started
+    var pressing = false; // a button or finger is down
+    var listeners = [];
+
+    function listen(type, handler, capture) {
+      container.addEventListener(type, handler, capture);
+      listeners.push([type, handler, capture]);
+    }
+
+    // Shows what a click would do: in Automático, a hand over the globe; in
+    // Explorar, the hover colour on a country with a page.
+    function updatePointer() {
+      var dragging = pressing && mouse && press &&
+        Math.hypot(mouse.clientX - press.x, mouse.clientY - press.y) > CLICK_MAX_MOVE_PX;
+      var point = mouse ? globePointAt(mouse) : null;
+      var target = exploreMode && point && !dragging ? countryAt(point) : null;
+      setHovered(target && target.url ? target : null);
+      if (!mouse) container.style.cursor = "";
+      else if (!exploreMode) container.style.cursor = point ? "pointer" : "";
+      else container.style.cursor = dragging ? "grabbing" : hovered ? "pointer" : "grab";
+    }
+
+    function setHovered(target) {
+      if (target === hovered) return;
+      if (hovered) hovered.hovered = false;
+      if (target) target.hovered = true;
+      hovered = target;
+      if (currentTheme) paintCountries(globe, currentTheme);
+    }
+
+    // The lat/lng on the globe under a mouse or touch position, or null if it's
+    // off the globe. Like globe.toGlobeCoords(), but it only tests the sphere,
+    // which is over 1000 times faster than testing every country shape.
+    function globePointAt(position) {
+      var rect = layer.getBoundingClientRect();
+      if (!rect.width || !rect.height) return null;
+      var camera = globe.camera();
+      var Vector3 = camera.position.constructor; // three.js isn't exposed, but its classes are
+      var origin = camera.position;
+      var direction = new Vector3(
+        ((position.clientX - rect.left) / rect.width) * 2 - 1,
+        1 - ((position.clientY - rect.top) / rect.height) * 2,
+        0.5
+      ).unproject(camera).sub(origin).normalize();
+      var radius = globe.getGlobeRadius();
+      var b = origin.dot(direction);
+      var discriminant = b * b - origin.lengthSq() + radius * radius;
+      if (discriminant < 0) return null;
+      return globe.toGeoCoords(direction.multiplyScalar(-b - Math.sqrt(discriminant)).add(origin));
+    }
+
+    // The highlighted country at a point. Off them, the nearest country with a
+    // page a few pixels away, so small ones like Panama are easy to hit.
+    function countryAt(point) {
+      for (var i = 0; i < highlightedShapes.length; i++) {
+        if (shapeContains(highlightedShapes[i].shape, point)) return highlightedShapes[i];
+      }
+      var margin = HIT_MARGIN_PX / pixelsPerDegree;
+      var nearest = null;
+      shapesWithPage.forEach(function (d) {
+        var distance = distanceToShape(d.shape, point);
+        if (distance < margin) {
+          nearest = d;
+          margin = distance;
+        }
+      });
+      return nearest;
+    }
+
+    function openPage(target) {
+      setHovered(target); // shows which country is opening, also on phones
+      // The website shows the globe in a frame: open the page in the whole tab,
+      // or in a new tab if the website ever stops allowing that.
+      if (!window.open(target.url, "_top")) window.open(target.url, "_blank");
+    }
+
+    // The caption lets clicks through, so this only catches the buttons and slider.
+    function isOnControls(event) {
+      return overlay.element.contains(event.target);
+    }
+
+    listen("pointermove", function (event) {
+      if (event.pointerType !== "mouse") return; // fingers don't hover
+      mouse = isOnControls(event) ? null : { clientX: event.clientX, clientY: event.clientY };
+      if (!event.buttons) pressing = false; // released outside the globe
+      updatePointer();
+    });
+    listen("pointerleave", function () {
+      mouse = null;
+      updatePointer();
+    });
+    // Capture phase: the globe's drag controls get these events first otherwise.
+    listen("pointerdown", function (event) {
+      press = { x: event.clientX, y: event.clientY };
+      pressing = true;
+    }, true);
+    listen("pointerup", function () {
+      pressing = false;
+      updatePointer();
+    }, true);
+    listen("pointercancel", function () { pressing = false; }, true); // e.g. a finger started scrolling the page
+    listen("click", function (event) {
+      if (isOnControls(event)) return;
+      var point = globePointAt(event);
+      if (!point) return;
+      if (!exploreMode) {
+        setExploreMode(true); // only stops the globe: the country under the click was moving
+        return;
+      }
+      if (press && Math.hypot(event.clientX - press.x, event.clientY - press.y) > CLICK_MAX_MOVE_PX) return; // a drag
+      var target = countryAt(point);
+      if (target && target.url) openPage(target);
+    });
+    // Keeps the hover colour right if the globe keeps turning after a drag.
+    controls.addEventListener("change", function () {
+      if (exploreMode && mouse && !pressing) updatePointer();
+    });
 
     function setSpeed(secondsPerTurn) {
       degreesPerSecond = speedFromSeconds(secondsPerTurn);
@@ -171,11 +305,11 @@
         updateMovement();
         if (options.onSpeedChange) options.onSpeedChange(secondsFromSpeed(degreesPerSecond));
       });
-      overlay.rotateButton.addEventListener("click", function () { setDragMode(false); });
-      overlay.dragButton.addEventListener("click", function () { setDragMode(true); });
+      overlay.rotateButton.addEventListener("click", function () { setExploreMode(false); });
+      overlay.exploreButton.addEventListener("click", function () { setExploreMode(true); });
     }
 
-    setDragMode(options.allowDragging);
+    setExploreMode(options.startExploring);
 
     // --- Housekeeping
 
@@ -198,7 +332,7 @@
       // Colours for the title and controls (used in project-globe.css).
       var light = isLight(currentTheme.background);
       container.classList.toggle("project-globe--light", light);
-      container.style.setProperty("--project-globe-text", currentTheme.textColor || (light ? "#1d1b19" : "#e8eef6"));
+      container.style.setProperty("--project-globe-text", textColorOf(currentTheme));
       container.style.setProperty(
         "--project-globe-accent",
         toRgbString(currentTheme.accentColor || currentTheme.highlightColor)
@@ -210,7 +344,7 @@
     return {
       setTheme: setTheme,
       getTheme: function () { return currentTheme; },
-      setDragMode: setDragMode,
+      setExploreMode: setExploreMode,
       setSpeed: setSpeed,
       // Language of the texts ("es", "en"...).
       language: language,
@@ -222,10 +356,12 @@
       destroy: function () {
         resizeObserver.disconnect();
         visibilityObserver.disconnect();
+        listeners.forEach(function (l) { container.removeEventListener(l[0], l[1], l[2]); });
         globe._destructor();
         layer.remove();
         overlay.element.remove();
         container.classList.remove("project-globe", layoutClass);
+        container.style.cursor = "";
       },
     };
   }
@@ -299,11 +435,11 @@
       ui.rotateButton = element("button");
       ui.rotateButton.type = "button";
       ui.rotateButton.textContent = options.labels.rotate;
-      ui.dragButton = element("button");
-      ui.dragButton.type = "button";
-      ui.dragButton.textContent = options.labels.drag;
+      ui.exploreButton = element("button");
+      ui.exploreButton.type = "button";
+      ui.exploreButton.textContent = options.labels.explore;
       modes.appendChild(ui.rotateButton);
-      modes.appendChild(ui.dragButton);
+      modes.appendChild(ui.exploreButton);
 
       ui.speed = element("label", "project-globe-speed");
       var speedText = element("span");
@@ -379,16 +515,19 @@
     return lookup;
   }
 
-  // Accepts a list of names, or an object whose keys are names.
+  // Accepts a list of names, or an object of name -> page address ("" = no page).
   function findCountries(input) {
     var names = Array.isArray(input) ? input : Object.keys(input);
     var map = getLookup();
     var matched = [];
     var unknown = [];
+    var pages = new Map(); // country id -> page address
     names.forEach(function (name) {
       var country = map.get(normalize(name));
       if (country) {
         if (matched.indexOf(country) === -1) matched.push(country);
+        var page = Array.isArray(input) ? "" : String(input[name] || "").trim();
+        if (page) pages.set(country.id, page);
       } else {
         unknown.push(name);
       }
@@ -404,30 +543,89 @@
       matched: matched,
       unknown: unknown,
       highlightedIds: new Set(matched.map(function (c) { return c.id; })),
+      pages: pages,
     };
   }
 
-  // One object per country shape, flagged if it is highlighted. Highlighted
-  // countries too small to see (Bahrain, Singapore...) are drawn as a round
-  // "country" instead, larger than real life but styled like the others.
+  // One object per country shape, flagged if it is highlighted, with the full
+  // address of its page if it has one. Highlighted countries too small to see
+  // (Bahrain, Singapore...) are drawn as a round "country" instead, larger than
+  // real life but styled like the others.
   function buildShapes(countries, options) {
     var dotIds = new Set(
       countries.matched
         .filter(function (country) { return !country.shape || country.areaKm2 < options.smallCountryKm2; })
         .map(function (country) { return country.id; })
     );
+    function pageUrl(country) {
+      var page = countries.pages.get(country.id);
+      return page && options.pagesUrl ? options.pagesUrl + page : null;
+    }
     var shapes = window.WORLD_COUNTRIES
       .filter(function (country) { return country.shape; })
       .map(function (country) {
         var highlighted = countries.highlightedIds.has(country.id) && !dotIds.has(country.id);
-        return { shape: country.shape, highlighted: highlighted };
+        return { shape: country.shape, highlighted: highlighted, url: highlighted ? pageUrl(country) : null };
       });
     countries.matched.forEach(function (country) {
       if (!dotIds.has(country.id)) return;
       var dot = circle(country.label[1], country.label[0], options.smallCountryDotSize);
-      shapes.push({ shape: dot, highlighted: true, dot: true });
+      shapes.push({ shape: dot, highlighted: true, dot: true, url: pageUrl(country) });
     });
     return shapes;
+  }
+
+  function polygonsOf(geometry) {
+    return geometry.type === "Polygon" ? [geometry.coordinates] : geometry.coordinates;
+  }
+
+  // Whether a GeoJSON shape contains a {lat, lng} point: inside an odd number
+  // of its rings (inside the outline and not inside a hole).
+  function shapeContains(geometry, point) {
+    return polygonsOf(geometry).some(function (rings) {
+      return rings.filter(function (ring) { return ringContains(ring, point); }).length % 2 === 1;
+    });
+  }
+
+  function ringContains(ring, point) {
+    var inside = false;
+    for (var i = 0, j = ring.length - 1; i < ring.length; j = i++) {
+      var a = ring[i];
+      var b = ring[j];
+      if ((a[1] > point.lat) !== (b[1] > point.lat) &&
+          point.lng < a[0] + ((point.lat - a[1]) / (b[1] - a[1])) * (b[0] - a[0])) {
+        inside = !inside;
+      }
+    }
+    return inside;
+  }
+
+  // Distance in degrees from a {lat, lng} point to the nearest edge of a shape.
+  // Longitudes are shrunk away from the equator so both directions compare.
+  function distanceToShape(geometry, point) {
+    var lngScale = Math.cos((point.lat * Math.PI) / 180);
+    var nearest = Infinity;
+    polygonsOf(geometry).forEach(function (rings) {
+      rings.forEach(function (ring) {
+        // Corners relative to the point, so the point is at (0, 0).
+        var corners = ring.map(function (p) {
+          return [(((p[0] - point.lng + 540) % 360) - 180) * lngScale, p[1] - point.lat];
+        });
+        for (var i = 1; i < corners.length; i++) {
+          nearest = Math.min(nearest, distanceFromOrigin(corners[i - 1], corners[i]));
+        }
+      });
+    });
+    return nearest;
+  }
+
+  // Distance from (0, 0) to the segment a-b.
+  function distanceFromOrigin(a, b) {
+    var dx = b[0] - a[0];
+    var dy = b[1] - a[1];
+    var lengthSq = dx * dx + dy * dy;
+    var t = lengthSq ? Math.max(0, Math.min(1, -(a[0] * dx + a[1] * dy) / lengthSq)) : 0;
+    return Math.hypot(a[0] + t * dx, a[1] + t * dy);
   }
 
   // A round GeoJSON polygon around lat/lng with the given radius in degrees.
@@ -461,11 +659,16 @@
         theme = {};
       }
     }
-    return Object.assign({}, THEME_DEFAULTS, theme);
+    var resolved = Object.assign({}, THEME_DEFAULTS, theme);
+    resolved.hoverColor = resolved.hoverColor || resolved.accentColor || textColorOf(resolved);
+    return resolved;
+  }
+
+  function textColorOf(theme) {
+    return theme.textColor || (isLight(theme.background) ? "#1d1b19" : "#e8eef6");
   }
 
   function applyTheme(globe, theme, shapes, countries, options) {
-    var highlightBorder = theme.highlightBorderColor || theme.highlightColor;
     var ringRgb = toRgb(theme.markerColor || theme.highlightColor);
     var useDots = theme.countryStyle === "dots";
     // Dots for small countries sit a hair above the others so they never flicker against them.
@@ -493,17 +696,14 @@
         .hexPolygonUseDots(true)
         .hexPolygonResolution(theme.dotDensity)
         .hexPolygonMargin(0.35)
-        .hexPolygonColor(function (d) { return d.highlighted ? theme.highlightColor : theme.countryColor; })
         .hexPolygonAltitude(altitude);
     } else {
       globe
         .hexPolygonsData([])
         .polygonsData(shapes)
-        .polygonCapColor(function (d) { return d.highlighted ? theme.highlightColor : theme.countryColor; })
-        .polygonSideColor(function (d) { return d.highlighted ? withAlpha(theme.highlightColor, 0.35) : "rgba(0,0,0,0)"; })
-        .polygonStrokeColor(function (d) { return d.highlighted ? highlightBorder : theme.borderColor; })
         .polygonAltitude(altitude);
     }
+    paintCountries(globe, theme);
 
     globe
       .pathsData(theme.gridColor ? gridLines() : [])
@@ -517,6 +717,24 @@
       .ringMaxRadius(4)
       .ringPropagationSpeed(2)
       .ringRepeatPeriod(1600);
+  }
+
+  // Country colours. Runs again whenever the country under the mouse changes;
+  // that only recolours the shapes, it doesn't rebuild them.
+  function paintCountries(globe, theme) {
+    function fill(d) {
+      if (d.hovered) return theme.hoverColor;
+      return d.highlighted ? theme.highlightColor : theme.countryColor;
+    }
+    if (theme.countryStyle === "dots") {
+      globe.hexPolygonColor(fill);
+      return;
+    }
+    var highlightBorder = theme.highlightBorderColor || theme.highlightColor;
+    globe
+      .polygonCapColor(fill)
+      .polygonSideColor(function (d) { return d.highlighted ? withAlpha(fill(d), 0.35) : "rgba(0,0,0,0)"; })
+      .polygonStrokeColor(function (d) { return d.highlighted ? highlightBorder : theme.borderColor; });
   }
 
   // Latitude and longitude lines as [lat, lng] point lists.

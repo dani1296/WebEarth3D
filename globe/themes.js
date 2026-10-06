@@ -32,6 +32,8 @@
 //                         background, near black on a light one.
 //   accentColor           Colour of the numbers in the title and the active button.
 //                         Defaults to highlightColor.
+//   hoverColor            A country with a page under the mouse, in "Explorar" mode.
+//                         Defaults to accentColor, or to textColor if there's none.
 
 window.GLOBE_THEMES = {
   midnight: {
@@ -122,7 +124,7 @@ window.GLOBE_THEMES = {
     countryColor: "#f5f5f7",   // solid near-white, so the blue of the sea doesn't show through
     borderColor: "rgba(29, 29, 31, 0.28)",
     highlightColor: "#1d1d1f",
-    highlightBorderColor: "#1d1d1f",
+    highlightBorderColor: "#ffffff", // white lines between neighbouring highlighted countries
     highlightLift: 0.008,
     atmosphereColor: null,
     gridColor: "rgba(29, 29, 31, 0.06)",
