@@ -105,6 +105,8 @@
       .enablePointerInteraction(false) // no hover tooltips; saves work every frame
       .polygonGeoJsonGeometry("shape")
       .hexPolygonGeoJsonGeometry("shape")
+      // Countries start at their final height: rising out of the sphere, solid ones flicker through it.
+      .polygonsTransitionDuration(0)
       .pathTransitionDuration(0)
       .ringLat("lat")
       .ringLng("lng");

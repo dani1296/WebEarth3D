@@ -18,6 +18,7 @@
 //   countryStyle          "solid" (filled shapes) or "dots" (a grid of dots).
 //   dotDensity            Only for "dots": 2 (big, sparse) to 4 (small, dense). Default 3.
 //   countryColor          Countries without projects. Use "transparent" to hide them.
+//                         A see-through colour lets the ocean colour show through.
 //   borderColor           Borders of countries without projects ("solid" only).
 //   highlightColor        Countries with projects.
 //   highlightBorderColor  Borders of countries with projects ("solid" only).
@@ -115,10 +116,10 @@ window.GLOBE_THEMES = {
   website: {
     label: "Website",
     background: "#ffffff",
-    ocean: "#f5f5f7",
+    ocean: "#d3e3f6",          // seas: a soft tint of the site's blue, a bit darker than the land
     shading: 0.3,
     countryStyle: "solid",
-    countryColor: "rgba(29, 29, 31, 0.06)",
+    countryColor: "#f5f5f7",   // solid near-white, so the blue of the sea doesn't show through
     borderColor: "rgba(29, 29, 31, 0.28)",
     highlightColor: "#1d1d1f",
     highlightBorderColor: "#1d1d1f",
