@@ -1,0 +1,136 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Maqueta de Proyectos (Wix)</title>
+
+  <!--
+    Internal mock of the Wix "Proyectos" page, to review the globe there
+    before touching the real site. Not part of the website.
+
+    On the real page the globe replaces the old Google Maps box between the
+    totals and "Clientes". The iframe below is the Wix "Embed a site" box,
+    with the same address and size we use in Wix.
+  -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap">
+
+  <style>
+    /* Colours and font taken from the Wix site. */
+    :root {
+      --text: #1d1d1f;
+      --blue: #0071e3;
+      --header-height: 86px;
+    }
+
+    * { box-sizing: border-box; }
+
+    html, body {
+      margin: 0;
+      background: #ffffff;
+      color: var(--text);
+      font-family: Inter, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    }
+
+    header {
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      height: var(--header-height);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: clamp(24px, 12vw, 160px);
+      background: #ffffff;
+      font-size: 0.8rem;
+    }
+
+    header span:nth-child(3) { color: #9a9a9e; }
+
+    h1 {
+      margin: 48px auto 56px;
+      max-width: 14em;
+      font-size: clamp(2rem, 4.4vw, 2.85rem);
+      line-height: 1.25;
+      text-align: center;
+    }
+
+    /* The totals, in two columns. */
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 32px 24px;
+      max-width: 860px;
+      margin: 0 auto;
+      padding: 0 16px;
+      list-style: none;
+      color: var(--blue);
+      font-size: clamp(1.1rem, 2.4vw, 1.5rem);
+      font-weight: 700;
+      text-align: center;
+    }
+
+    .stats strong { display: block; }
+
+    /* The globe: this box is what Wix's "Embed a site" element becomes. */
+    .globe-frame {
+      display: block;
+      width: 800px;
+      max-width: calc(100% - 32px);
+      height: 640px;
+      margin: 40px auto 24px;
+      border: 0;
+    }
+
+    h2 {
+      margin: 40px 0 200px;
+      font-size: 1.875rem;
+      text-align: center;
+    }
+
+    .mock-note {
+      position: fixed;
+      left: 12px;
+      bottom: 12px;
+      z-index: 20;
+      padding: 6px 10px;
+      border-radius: 8px;
+      background: rgba(29, 29, 31, 0.85);
+      color: #ffffff;
+      font-size: 0.7rem;
+    }
+
+    /* Phones: the Wix mobile page is narrow, so the globe box is too. */
+    @media (max-width: 600px) {
+      header span { display: none; }
+      .stats { grid-template-columns: 1fr; }
+      .globe-frame { width: 300px; height: 360px; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <span>Luis Bozzo</span>
+    <span>Nosotros</span>
+    <span>Proyectos</span>
+    <span>Contacto</span>
+  </header>
+
+  <h1>Proyectos e Innovación Estructural Global</h1>
+
+  <ul class="stats">
+    <li><strong>+2,000</strong>Proyectos Realizados</li>
+    <li><strong>+1.200.000 m²</strong>Proyectados al año</li>
+    <li><strong>+15</strong>Países con obras ejecutadas</li>
+    <li><strong>+400</strong>Artículos y Publicaciones</li>
+  </ul>
+
+  <iframe class="globe-frame" src="../index.html?page=proyectos" title="Globo con los países donde tenemos proyectos"></iframe>
+
+  <h2>Clientes</h2>
+
+  <div class="mock-note">Maqueta local de la página Proyectos de Wix &middot; solo para revisar el diseño</div>
+</body>
+</html>
