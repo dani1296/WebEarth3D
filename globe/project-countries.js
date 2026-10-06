@@ -11,6 +11,12 @@
 // Very small countries (Bahrain, Singapore, Malta...) are drawn as a round
 // dot in the same colour as the other highlighted countries, larger than
 // their real size so they can be seen.
+//
+// Some territories are separate from their country on the globe:
+//   - "Francia" is mainland France and Corsica. Add "Guayana Francesa" to
+//     highlight French Guiana too.
+//   - "Marruecos" stops at its border with Western Sahara. Add
+//     "Sahara Occidental" to highlight Western Sahara too.
 
 // Same countries as the "Proyectos" menu on the website.
 window.PROJECT_COUNTRIES = [
