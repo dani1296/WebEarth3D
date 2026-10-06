@@ -23,6 +23,8 @@
 //   highlightColor        Countries with projects.
 //   highlightBorderColor  Borders of countries with projects ("solid" only).
 //   highlightLift         How far highlighted countries rise off the globe. 0 = flat.
+//   highlightSideOpacity  How visible the sides of raised countries are ("solid" only):
+//                         0 = invisible, 1 = solid. Default 0.35.
 //   atmosphereColor       Glow around the globe. null = no glow.
 //   atmosphereSize        Glow thickness, e.g. 0.1 (thin) to 0.3 (wide).
 //   gridColor             Latitude/longitude lines. null = no lines.

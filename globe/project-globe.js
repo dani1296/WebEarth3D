@@ -56,6 +56,7 @@
     highlightColor: "#22d3ee",
     highlightBorderColor: null,
     highlightLift: 0.01,
+    highlightSideOpacity: 0.35,
     atmosphereColor: null,
     atmosphereSize: 0.15,
     gridColor: null,
@@ -733,7 +734,9 @@
     var highlightBorder = theme.highlightBorderColor || theme.highlightColor;
     globe
       .polygonCapColor(fill)
-      .polygonSideColor(function (d) { return d.highlighted ? withAlpha(fill(d), 0.35) : "rgba(0,0,0,0)"; })
+      .polygonSideColor(function (d) {
+        return d.highlighted ? withAlpha(fill(d), theme.highlightSideOpacity) : "rgba(0,0,0,0)";
+      })
       .polygonStrokeColor(function (d) { return d.highlighted ? highlightBorder : theme.borderColor; });
   }
 
