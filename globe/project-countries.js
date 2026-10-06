@@ -34,5 +34,6 @@ window.PROJECT_COUNTRIES = [
   "Francia", 
   "Bolivia", 
   "Guatemala", 
-  "Marruecos"
+  "Marruecos",
+  "Venezuela"
 ];
