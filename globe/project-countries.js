@@ -35,7 +35,7 @@ window.PROJECT_COUNTRIES = {
   "Filipinas":  "filipinas",
   "Panamá":     "panama",
   "Ghana":      "",
-  "Ecuador":    "",
+  "Ecuador":    "ecuador",
   "Colombia":   "",
   "Francia":    "",
   "Bolivia":    "",
