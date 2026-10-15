@@ -38,6 +38,13 @@
 //   "en" texts. In Wix, each language version of the page uses its own address.
 //   A language can change any of the settings above (usually the texts and
 //   pagesUrl); anything it doesn't set uses the Spanish value.
+//
+// Other pages of the website (see "pages" at the very bottom)
+//   The globe is on the home page and on the Proyectos page. The address
+//   chooses the page too: ...WebEarth3D/?page=proyectos (with another language:
+//   ...WebEarth3D/?page=proyectos&lang=en). A page can change any of the
+//   settings above, in every language; anything it doesn't set stays as on
+//   the home page.
 
 window.GLOBE_SETTINGS = {
   theme: "website",
@@ -80,6 +87,14 @@ window.GLOBE_SETTINGS = {
       countriesTotal: "15",
       labels: { rotate: "自動回転", explore: "探索", speed: "速度" },
       pagesUrl: "https://www.luisbozzo.com/ja/",
+    },
+  },
+
+  pages: {
+    // Proyectos page: ...WebEarth3D/?page=proyectos
+    // The totals are already written just above the globe there, so no title.
+    proyectos: {
+      title: "",
     },
   },
 };

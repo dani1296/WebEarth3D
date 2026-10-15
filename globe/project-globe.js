@@ -18,6 +18,10 @@
 // Language: the page's address picks it, e.g. index.html?lang=en uses the
 // "en" texts from settings.js. Without ?lang= the main (Spanish) texts are used.
 //
+// Website page: the address picks it too, e.g. index.html?page=proyectos uses
+// the "proyectos" settings from settings.js, which win over the language ones.
+// Without ?page= the globe looks as on the home page.
+//
 // The element you pass in must have a size (e.g. height: 100vh in CSS);
 // the globe fills it and follows it when it resizes.
 
@@ -82,8 +86,11 @@
     var settings = window.GLOBE_SETTINGS || {};
     var language = pickLanguage(userOptions.language, settings.languages);
     var translation = language === DEFAULT_LANGUAGE ? {} : settings.languages[language];
-    var options = Object.assign({}, DEFAULT_OPTIONS, settings, translation, userOptions);
-    options.labels = Object.assign({}, DEFAULT_OPTIONS.labels, settings.labels, translation.labels, userOptions.labels);
+    var pageSettings = pickPage(userOptions.page, settings.pages);
+    var options = Object.assign({}, DEFAULT_OPTIONS, settings, translation, pageSettings, userOptions);
+    options.labels = Object.assign(
+      {}, DEFAULT_OPTIONS.labels, settings.labels, translation.labels, pageSettings.labels, userOptions.labels
+    );
     var countries = findCountries(options.countries || window.PROJECT_COUNTRIES || []);
     var shapes = buildShapes(countries, options);
     var currentTheme = null;
@@ -376,6 +383,18 @@
     if (code === DEFAULT_LANGUAGE || (languages && languages[code])) return code;
     console.warn('ProjectGlobe: no hay textos para el idioma "' + code + '" en settings.js; se usa español.');
     return DEFAULT_LANGUAGE;
+  }
+
+  // Settings for the website page the globe is on: the one passed in, else
+  // ?page= in the page address (e.g. "?page=proyectos", set in Wix), else none
+  // (the home page). A page without settings in settings.js is ignored.
+  function pickPage(requested, pages) {
+    var name = requested || new URLSearchParams(window.location.search).get("page");
+    if (!name) return {};
+    name = String(name).toLowerCase();
+    if (pages && Object.prototype.hasOwnProperty.call(pages, name)) return pages[name];
+    console.warn('ProjectGlobe: no hay ajustes para la página "' + name + '" en settings.js; se usan los de la portada.');
+    return {};
   }
 
   // Camera distance (in globe radii above the surface) at which the globe
